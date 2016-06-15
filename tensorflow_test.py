@@ -20,4 +20,4 @@ with tf.Session() as sess:
     sess.run(init_op) #execute init_op
     #print the random values that we sample
     print (sess.run(normal_rv))
-    wd= sess.run(weights['wd1'].get_shape().as_list())
+    wd= weights['wd1'].get_shape().as_list()

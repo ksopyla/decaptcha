@@ -51,7 +51,7 @@ for file in file_list:
     
     if len(im_shape)>2:
         print file
-        break
+        #break
     
         #convert to gray img
         # r, g, b = img[:,:,0], img[:,:,1], img[:,:,2]
