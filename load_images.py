@@ -1,28 +1,20 @@
-from scipy import ndimage
-from PIL import Image          
-import time
+import numpy as np
+from scipy.misc import imread, imresize
+import matplotlib.pyplot as plt
+import os
+import vec_mappings as vecmap
 
 
 folder="./shared/Captcha/img/"
 file = "1864_shste"
 path= folder+file
-img = Image.open(path)
-img.show() 
-
-
-import numpy as np
-from scipy.misc import imread, imresize
-import matplotlib.pyplot as plt
-import os
-import pandas as pd
 
 
 #probability of showing the images, higher shows less images
-show_prob=0.9
+show_prob=0.99
 
 
 file_list = os.listdir(folder)
-df=pd.DataFrame({ 'file_name':  file_list})
 
 #stores all capchas img sizes (57x300)
 img_sizes = list()
@@ -35,9 +27,18 @@ avg_letters=0.0
 counter=0.0
 
 
-import time
+# number of files
+N =len([name for name in os.listdir(folder)])
 
-for file in file_list:
+# stores images #N x 19456 (64*304)
+X = np.zeros([N, 64*304])
+
+# max captcha text = 20chars, at each postion coulb be 0...9A..Za..z_ so 63 different chars
+# 20x63= 1260
+Y = np.zeros([N, 20*63])
+
+
+for i, file in enumerate(file_list):
     
     cur_letters = len(file)
     letters.append(cur_letters)
@@ -62,15 +63,26 @@ for file in file_list:
 
     
     else: 
-        #resize image to 64.304, because conv nets work better with 
-        # dimensions divided by 2, previous dims=(57,300), we add 4 pixesl at the top
+        # each immage has size 57x300, we have to 
+        # resize images to 64x304, because conv nets work better with 
+        # dimensions divided by 2, we add 4 pixesl at the top
         # 3 pixesl at the bottom and 2 to left and right
+        # TODO: change it to more automatic way, what if image size will be 
+        # different than 57.300?
         im_pad = np.pad(img,((4,3),(2,2)), 'constant', constant_values=(255,))
         
     
+    # file with padded text with '_', each captach has 20 char lenght
+    captcha_text = file.ljust(20,'_')
+    
+    X[i,:] = im_pad.flatten()
+    Y[i,:] = vecmap.map_words(captcha_text)
+    
+    
+    
     
     if(np.random.random()> show_prob):
-        plt.imshow(img,cmap='Greys_r')
+        #plt.imshow(img,cmap='Greys_r')
         plt.imshow(im_pad,cmap='Greys_r')
         #plt.imshow(im_pad,cmap=plt.cm.binary)
         plt.show()

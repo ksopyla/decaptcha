@@ -15,9 +15,9 @@ import datetime as dt
 
 # Parameters
 learning_rate = 0.001
-training_iters = 400000
+training_iters = 128*5000
 batch_size = 128
-display_step = 50
+display_step = 10
 
 # Network Parameters
 n_input = 784 # MNIST data input (img shape: 28*28)
@@ -40,15 +40,25 @@ def conv_net(_X, _weights, _biases, _dropout):
     # Reshape input picture
     _X = tf.reshape(_X, shape=[-1, 28, 28, 1])
 
-    # Convolution Layer
+    # Convolution Layer 5x5x32 first, layer with relu
     conv1 = conv2d(_X, _weights['wc1'], _biases['bc1'])
-    # Max Pooling (down-sampling)
+    
+    # Convolution Layer 3x3x32, second layer with relu
+    conv1 = conv2d(conv1, _weights['wc11'], _biases['bc11'])
+
+    # Max Pooling (down-sampling), change input size by factor of 2 (28/2=14)
     conv1 = max_pool(conv1, k=2)
     # Apply Dropout
     conv1 = tf.nn.dropout(conv1, _dropout)
-
-    # Convolution Layer
+    
+    
+    # Convolution Layer, 5x5x64
     conv2 = conv2d(conv1, _weights['wc2'], _biases['bc2'])
+    
+    
+    # Convolution Layer, 3x3x64
+    conv2 = conv2d(conv2, _weights['wc22'], _biases['bc22'])
+    
     # Max Pooling (down-sampling)
     conv2 = max_pool(conv2, k=2)
     # Apply Dropout
@@ -61,19 +71,24 @@ def conv_net(_X, _weights, _biases, _dropout):
 
     # Output, class prediction
     out = tf.add(tf.matmul(dense1, _weights['out']), _biases['out'])
+    #out = tf.nn.softmax(out)
     return out
 
 # Store layers weight & bias
 weights = {
     'wc1': tf.Variable(tf.random_normal([5, 5, 1, 32])), # 5x5 conv, 1 input, 32 outputs
+    'wc11': tf.Variable(tf.random_normal([3, 3, 32, 32])), # 3x3 conv, 32 input, 32 outputs
     'wc2': tf.Variable(tf.random_normal([5, 5, 32, 64])), # 5x5 conv, 32 inputs, 64 outputs
+    'wc22': tf.Variable(tf.random_normal([3, 3, 64, 64])), # 5x5 conv, 32 inputs, 64 outputs
     'wd1': tf.Variable(tf.random_normal([7*7*64, 1024])), # fully connected, 7*7*64 inputs, 1024 outputs
     'out': tf.Variable(tf.random_normal([1024, n_classes])) # 1024 inputs, 10 outputs (class prediction)
 }
 
 biases = {
     'bc1': tf.Variable(tf.random_normal([32])),
+    'bc11': tf.Variable(tf.random_normal([32])),
     'bc2': tf.Variable(tf.random_normal([64])),
+    'bc22': tf.Variable(tf.random_normal([64])),
     'bd1': tf.Variable(tf.random_normal([1024])),
     'out': tf.Variable(tf.random_normal([n_classes]))
 }
