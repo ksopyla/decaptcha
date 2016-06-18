@@ -55,7 +55,25 @@ def load_dataset(folder="./shared/Captcha/img/"):
         
         
     return (X,Y,captchas)
+   
+   
+def random_batch(X,Y, batch_size=128):
     
+    shape_X = X.shape
+    shape_Y = Y.shape
+    
+    if shape_X[0]!=shape_Y[0]:
+        raise ValueError('X and Y has different number of examples')
+        
+    num_ele = shape_X[0]
+    
+    if batch_size > num_ele:
+        raise ValueError('Batch cant be larger then X has rows')
+        
+    
+    rand_idx = np.random.choice(num_ele,batch_size, replace=False)
+    
+    return X[rand_idx,:], Y[rand_idx,:]
     
 
 def map_char2pos(c):
