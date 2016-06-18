@@ -1,5 +1,6 @@
 import numpy as np
-
+import os
+from scipy.misc import imread
 
 
 def load_dataset(folder="./shared/Captcha/img/"):
@@ -17,6 +18,7 @@ def load_dataset(folder="./shared/Captcha/img/"):
     # max captcha text = 20chars, at each postion coulb be 0...9A..Za..z_ so 63 different chars
     # 20x63= 1260
     Y = np.zeros([N, 20*63])
+    captchas = list()
     
     
     for i, file in enumerate(file_list):
@@ -44,16 +46,19 @@ def load_dataset(folder="./shared/Captcha/img/"):
             im_pad = np.pad(img,((4,3),(2,2)), 'constant', constant_values=(255,))
             
         
+        captchas.append(file)
         # file with padded text with '_', each captach has 20 char lenght
         captcha_text = file.ljust(20,'_')
         
         X[i,:] = im_pad.flatten()
-        Y[i,:] = vecmap.map_words(captcha_text)
-    return (X,Y)
+        Y[i,:] = map_words(captcha_text)
+        
+        
+    return (X,Y,captchas)
     
     
 
-def map_chars(c):
+def map_char2pos(c):
     """
     returns index/position of char passed in argument for sequence
     '0...9A...Za...z_'
@@ -92,15 +97,84 @@ def map_chars(c):
     return k    
     
     
-def map_words(words):
+def map_words2vec(words):
+    """
+    Maps word of max 20 characters to vector, each character could be
+    '0...9A...Za...z_'
+    char 0 has an index 0
+    char A has an index 10 etc.
+    The vector contains only 0 and 1, each char position in word is encoded by 63 
+    continous vector positions, index 0 encodes occurence of char '0' at firs postion,
+    index 63 encodes occurence of char '0' at second position in the word
+    
+    eg. word = 'at' looks like
+    
+    vec[36]=1
+    vec[118]=1
+    
+    because, at first position we have char 'a' so
+    vec[0:9]=0 it is reserved for digits
+    vec[10:35] is reserved for big latin letters
+    vec[36:61] is reserved for small latin letters, firs in alphabet is 'a' so it is at 36 position
+    vec[62] - reserved for '_'
+
+
+    character at second place 't'
+    vec[63:72] - digits
+    vec[73:98] - big letters
+    vec[99:124] - small letters, 't' is 19 letter in alphabet so 99+19=118
+    vec[125] - '_'
+    
+    Params
+    =======
+    words: string
+    
+    Return
+    =======
+    numpy array, 1260 dim
+    
+    """
     vector = np.zeros(20*63)
     
+    if len(words)>20:
+        raise ValueError('word should have length less than 20')
+    
     for i, c in enumerate(words):
-        idx=i*63+map_chars(c)
+        idx=i*63+map_char2pos(c)
         
         vector[idx]=1
       
     return vector  
     
     
+    
+    
+def map_vec2words(vec):
+    
+    if vec.shape[0]!= 1260:
+        raise ValueError('vector should has 1260 dims')
+        
+    chars_pos = vec.nonzero()[0]
+    
+    word=list()
+    
+    for i, c in enumerate(chars_pos):
+        char_at_pos = i #c/63
+        char_idx = c%63
+        
+        if char_idx<10:
+            char_code= char_idx+ ord('0')
+        elif char_idx <36:
+            char_code= char_idx-10 + ord('A')
+        elif char_idx < 62:
+            char_code= char_idx-36 + ord('a')
+        elif char_idx == 62:
+            char_code = ord('_')
+        else:
+            raise ValueError('not recognized char code')
+            
+        
+        word.append(chr(char_code))
+      
+    return "".join(word)
     
