@@ -51,7 +51,7 @@ def load_dataset(folder="./shared/Captcha/img/"):
         captcha_text = file.ljust(20,'_')
         
         X[i,:] = im_pad.flatten()
-        Y[i,:] = map_words(captcha_text)
+        Y[i,:] = map_words2vec(captcha_text)
         
         
     return (X,Y,captchas)

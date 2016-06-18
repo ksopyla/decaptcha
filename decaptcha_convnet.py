@@ -8,6 +8,11 @@ Author: ksopyla (krzysztofsopyla@gmail.com)
 import tensorflow as tf
 import datetime as dt
 
+import vec_mappings as vecmp
+
+
+X, Y = vecmp.load_dataset()
+
 # Parameters
 learning_rate = 0.001
 training_iters = 128*5000
@@ -16,7 +21,7 @@ display_step = 10
 
 # Network Parameters
 n_input = 64*304 # captcha images has 64x304 size
-n_classes = 20*63 10 # each word is encoded by 1260 vector
+n_classes = 20*63 # each word is encoded by 1260 vector
 dropout = 0.75 # Dropout, probability to keep units
 
 # tf Graph input
@@ -118,7 +123,7 @@ with tf.Session() as sess:
     
     # Keep training until reach max iterations
     while step * batch_size < training_iters:
-        batch_xs, batch_ys = mnist.train.next_batch(batch_size)
+        batch_xs, batch_ys =random_batch(X, Y, batch_size)
         # Fit training using batch data
         sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys, keep_prob: dropout})
         if step % display_step == 0:
