@@ -88,7 +88,8 @@ weights = {
     #'wc22': tf.Variable(tf.random_normal([3, 3, 64, 64])), # 5x5 conv, 32 inputs, 64 outputs
     'wc3': tf.Variable(tf.random_normal([3, 3, 64, 64])), # 3x3 conv, 64 inputs, 64 outputs
     'wd1': tf.Variable(tf.random_normal([8*38*64, 1024])), # fully connected, 64/(2*2*2)=8, 304/(2*2*2)=38 (three max pool k=2) inputs, 1024 outputs
-    'out': tf.Variable(tf.random_normal([1024, n_classes])) # 1024 inputs, 10 outputs (class prediction)
+    #'out': tf.Variable(tf.random_normal([1024, n_classes])) # 1024 inputs, 10 outputs (class prediction)
+    'out': tf.Variable(tf.random_normal([1024, 20*63])) # 1024 inputs,
 }
 
 biases = {
@@ -98,7 +99,7 @@ biases = {
     #'bc22': tf.Variable(tf.random_normal([64])),
     'bc3': tf.Variable(tf.random_normal([64])),
     'bd1': tf.Variable(tf.random_normal([1024])),
-    'out': tf.Variable(tf.random_normal([n_classes]))
+    'out': tf.Variable(tf.random_normal([20*63]))
 }
 
 # Construct model
@@ -106,13 +107,59 @@ pred = conv_net(x, weights, biases, keep_prob)
 
 # Define loss and optimizer
 
-????
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
-optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
+#????
+
+#split prediction for each char it takes 63 continous postions, we have 20 chars
+split_pred = tf.split(1,63,pred)
+split_y = tf.split(1,63,y)
+
+
+#compute partial softmax cost, for each char
+costs = list()
+for i in range(20):
+    costs.append(tf.nn.softmax_cross_entropy_with_logits(split_pred[i],split_y[i]))
+    
+#reduce cost for each char
+rcosts = list()
+for i in range(20):
+    rcosts.append(tf.reduce_mean(costs[i]))
+    
+# global reduce    
+loss = tf.reduce_sum(rcosts)
+optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
+
 
 # Evaluate model
-correct_pred = tf.equal(tf.argmax(pred,1), tf.argmax(y,1))
+
+# pred are in format batch_size,20*63, reshape it in order to have each character prediction
+# in row, then take argmax of each row (across columns) then check if it is equal 
+# original label max indexes
+# then sum all good results and compute mean (accuracy)
+
+#batch, rows, cols
+p = tf.reshape(pred,[batch_size,20,63])
+#max idx acros the rows
+max_idx_p=tf.argmax(p,2).eval()
+
+l = tf.reshape(y,[batch_size,20,63])
+#max idx acros the rows
+max_idx_l=tf.argmax(l,2).eval()
+
+correct_pred = tf.equal(max_idx_p,max_idx_l)
 accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+
+
+
+
+
+
+
+#cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
+#optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
+
+# Evaluate model
+#correct_pred = tf.equal(tf.argmax(pred,1), tf.argmax(y,1))
+#accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
 # Initializing the variables
 init = tf.initialize_all_variables()

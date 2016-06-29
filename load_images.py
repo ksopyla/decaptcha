@@ -76,7 +76,7 @@ for i, file in enumerate(file_list):
     captcha_text = file.ljust(20,'_')
     
     X[i,:] = im_pad.flatten()
-    Y[i,:] = vecmap.map_words(captcha_text)
+    Y[i,:] = vecmap.map_words2vec(captcha_text)
     
     
     
