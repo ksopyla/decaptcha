@@ -92,13 +92,14 @@ with tf.Session() as sess:
     sess.run(optimizer)
     
     
-    
+    #batch, rows, cols
     p = tf.reshape(pred,[3,4,3])
     #max idx acros the rows
-    max_idx=tf.argmax(p,2).eval()
+    max_idx_p=tf.argmax(p,2).eval()
     
     l = tf.reshape(lab,[3,4,3])
     #max idx acros the rows
-    max_idx=tf.argmax(l,2).eval()
+    max_idx_l=tf.argmax(l,2).eval()
     
-    
+    correct_pred = tf.equal(max_idx_p,max_idx_l)
+    accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
