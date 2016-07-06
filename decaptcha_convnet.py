@@ -11,11 +11,14 @@ import vec_mappings as vecmp
 
 X, Y, captcha_text = vecmp.load_dataset()
 
+X = X[0:128,:]
+Y = Y[0:128,:]
+
 # Parameters
 learning_rate = 0.001
-training_iters = 128*5000
-batch_size = 128
-display_step = 10
+training_iters =10 # 128*5000
+batch_size = 64
+display_step = 1
 
 # Network Parameters
 n_input = 64*304 # captcha images has 64x304 size
@@ -139,11 +142,13 @@ optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
 #batch, rows, cols
 p = tf.reshape(pred,[batch_size,20,63])
 #max idx acros the rows
-max_idx_p=tf.argmax(p,2).eval()
+#max_idx_p=tf.argmax(p,2).eval()
+max_idx_p=tf.argmax(p,2)
 
 l = tf.reshape(y,[batch_size,20,63])
 #max idx acros the rows
-max_idx_l=tf.argmax(l,2).eval()
+#max_idx_l=tf.argmax(l,2).eval()
+max_idx_l=tf.argmax(l,2)
 
 correct_pred = tf.equal(max_idx_p,max_idx_l)
 accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
@@ -181,15 +186,26 @@ with tf.Session() as sess:
     # Keep training until reach max iterations
     while step * batch_size < training_iters:
         batch_xs, batch_ys = vecmp.random_batch(X, Y, batch_size)
+        
+        
         # Fit training using batch data
+        
+        print("opt step {}".format(dt.datetime.now()))
         sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys, keep_prob: dropout})
+        print("end step {}".format(dt.datetime.now()))        
+        
         if step % display_step == 0:
+            
+            print("acc start {}".format(dt.datetime.now()))
             # Calculate batch accuracy
             acc = sess.run(accuracy, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 1.})
             accuracies.append(acc)
+            
+            print("loss start {}".format(dt.datetime.now()))
             # Calculate batch loss
-            loss = sess.run(cost, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 1.})
-            losses.append(loss)
+            batch_loss = sess.run(loss, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 1.})
+            losses.append(batch_loss)
+            
             print "Iter " + str(step*batch_size) + " started={}".format(dt.datetime.now()) + ", Minibatch Loss= " + "{:.6f}".format(loss) + ", Training Accuracy= " + "{:.5f}".format(acc)
             
 
