@@ -11,13 +11,13 @@ import vec_mappings as vecmp
 
 X, Y, captcha_text = vecmp.load_dataset()
 
-X = X[0:128,:]
-Y = Y[0:128,:]
+# X = X[0:128,:]
+# Y = Y[0:128,:]
 
 # Parameters
 learning_rate = 0.001
-training_iters =10 # 128*5000
 batch_size = 64
+training_iters =1000*batch_size # 128*5000
 display_step = 1
 
 # Network Parameters
@@ -110,8 +110,6 @@ pred = conv_net(x, weights, biases, keep_prob)
 
 # Define loss and optimizer
 
-#????
-
 #split prediction for each char it takes 63 continous postions, we have 20 chars
 split_pred = tf.split(1,63,pred)
 split_y = tf.split(1,63,y)
@@ -185,14 +183,14 @@ with tf.Session() as sess:
     
     # Keep training until reach max iterations
     while step * batch_size < training_iters:
-        batch_xs, batch_ys = vecmp.random_batch(X, Y, batch_size)
+        batch_xs, batch_ys, idx = vecmp.random_batch(X, Y, batch_size)
         
         
         # Fit training using batch data
-        
+        print("##############")
         print("opt step {}".format(dt.datetime.now()))
         sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys, keep_prob: dropout})
-        print("end step {}".format(dt.datetime.now()))        
+        #print("end step {}".format(dt.datetime.now()))        
         
         if step % display_step == 0:
             
@@ -206,7 +204,7 @@ with tf.Session() as sess:
             batch_loss = sess.run(loss, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 1.})
             losses.append(batch_loss)
             
-            print "Iter " + str(step*batch_size) + " started={}".format(dt.datetime.now()) + ", Minibatch Loss= " + "{:.6f}".format(loss) + ", Training Accuracy= " + "{:.5f}".format(acc)
+            print "Iter " + str(step*batch_size) + " started={}".format(dt.datetime.now()) + ", Minibatch Loss= " + "{:.6f}".format(batch_loss) + ", Training Accuracy= " + "{}".format(acc)
             
 
             epoch+=1

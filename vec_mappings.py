@@ -73,7 +73,7 @@ def random_batch(X,Y, batch_size=128):
     
     rand_idx = np.random.choice(num_ele,batch_size, replace=False)
     
-    return X[rand_idx,:], Y[rand_idx,:]
+    return X[rand_idx,:], Y[rand_idx,:],rand_idx
     
 
 def map_char2pos(c):
