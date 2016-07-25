@@ -91,8 +91,8 @@ weights = {
     #'wc22': tf.Variable(tf.random_normal([3, 3, 64, 64])), # 5x5 conv, 32 inputs, 64 outputs
     'wc3': tf.Variable(tf.random_normal([3, 3, 64, 64])), # 3x3 conv, 64 inputs, 64 outputs
     'wd1': tf.Variable(tf.random_normal([8*38*64, 1024])), # fully connected, 64/(2*2*2)=8, 304/(2*2*2)=38 (three max pool k=2) inputs, 1024 outputs
-    #'out': tf.Variable(tf.random_normal([1024, n_classes])) # 1024 inputs, 10 outputs (class prediction)
-    'out': tf.Variable(tf.random_normal([1024, 20*63])) # 1024 inputs,
+    #'out': tf.Variable(tf.random_normal([1024, n_classes])) 
+    'out': tf.Variable(tf.random_normal([1024, 20*63])) # 1024 inputs, 20*63 outputs for one catpcha word (max 20chars)
 }
 
 biases = {
@@ -111,8 +111,8 @@ pred = conv_net(x, weights, biases, keep_prob)
 # Define loss and optimizer
 
 #split prediction for each char it takes 63 continous postions, we have 20 chars
-split_pred = tf.split(1,63,pred)
-split_y = tf.split(1,63,y)
+split_pred = tf.split(1,20,pred)
+split_y = tf.split(1,20,y)
 
 
 #compute partial softmax cost, for each char
@@ -179,8 +179,6 @@ with tf.Session() as sess:
     epoch=0
     start_epoch=dt.datetime.now()
     
-    
-    
     # Keep training until reach max iterations
     while step * batch_size < training_iters:
         batch_xs, batch_ys, idx = vecmp.random_batch(X, Y, batch_size)
@@ -190,7 +188,7 @@ with tf.Session() as sess:
         print("##############")
         print("opt step {}".format(dt.datetime.now()))
         sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys, keep_prob: dropout})
-        #print("end step {}".format(dt.datetime.now()))        
+        print("end step {}".format(dt.datetime.now()))        
         
         if step % display_step == 0:
             
@@ -206,6 +204,17 @@ with tf.Session() as sess:
             
             print "Iter " + str(step*batch_size) + " started={}".format(dt.datetime.now()) + ", Minibatch Loss= " + "{:.6f}".format(batch_loss) + ", Training Accuracy= " + "{}".format(acc)
             
+            batch_idx=0
+            k=idx[batch_idx]
+            
+            pp = sess.run(pred, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 1.})
+            
+            l = tf.reshape(batch_ys,[batch_size,20,63]).eval()
+            
+            vecmp.map_vec2words(batch_ys[batch_idx,:])
+            vecmp.map_vec2words(pp[batch_idx,:])
+            
+            print("true : {}, predicted {}".format(captcha_text[k], vecmp.map_ve2words(batch_ys[batch_idx,:])
 
             epoch+=1
         
@@ -213,8 +222,8 @@ with tf.Session() as sess:
         
     end_epoch = dt.datetime.now()
     print "Optimization Finished, end={} duration={}".format(end_epoch,end_epoch-start_epoch)
-    # Calculate accuracy for 256 mnist test images
-    #print "Testing Accuracy:", sess.run(accuracy, feed_dict={x: mnist.test.images[:256], y: mnist.test.labels[:256], keep_prob: 1.})
+    # Calculate accuracy 
+    print "Testing Accuracy:", sess.run(accuracy, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 1.})
     
 
 import matplotlib.pyplot as plt

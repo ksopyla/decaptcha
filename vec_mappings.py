@@ -169,8 +169,8 @@ def map_words2vec(words):
     
 def map_vec2words(vec):
     
-    if vec.shape[0]!= 1260:
-        raise ValueError('vector should has 1260 dims')
+    # if vec.shape[0]!= 1260:
+    #     raise ValueError('vector should has 1260 dims')
         
     chars_pos = vec.nonzero()[0]
     

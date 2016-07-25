@@ -16,7 +16,7 @@ import datetime as dt
 # Parameters
 learning_rate = 0.001
 training_iters = 128*5000
-batch_size = 128
+batch_size = 64
 display_step = 10
 
 # Network Parameters
@@ -143,7 +143,7 @@ with tf.Session() as sess:
     end_epoch = dt.datetime.now()
     print "Optimization Finished, end={} duration={}".format(end_epoch,end_epoch-start_epoch)
     # Calculate accuracy for 256 mnist test images
-    print "Testing Accuracy:", sess.run(accuracy, feed_dict={x: mnist.test.images[:256], y: mnist.test.labels[:256], keep_prob: 1.})
+    print "Testing Accuracy:", sess.run(accuracy, feed_dict={x: mnist.test.images, y: mnist.test.labels, keep_prob: 1.})
     
 
 import matplotlib.pyplot as plt
