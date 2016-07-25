@@ -220,7 +220,7 @@ with tf.Session() as sess:
             true_word = vecmp.map_vec_pos2words(max_idx_l[batch_idx,:])
 
             
-            print("true : {}, predicted {}".format(true_word, predicted_word)
+            print("true : {}, predicted {}".format(true_word, predicted_word))
 
             epoch+=1
         
