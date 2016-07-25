@@ -208,13 +208,19 @@ with tf.Session() as sess:
             k=idx[batch_idx]
             
             pp = sess.run(pred, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 1.})
+            p = tf.reshape(pp,[batch_size,20,63])
+            max_idx_p=tf.argmax(p,2).eval()
             
-            l = tf.reshape(batch_ys,[batch_size,20,63]).eval()
+            predicted_word = vecmp.map_vec_pos2words(max_idx_p[batch_idx,:])
+
+
+            l = tf.reshape(batch_ys,[batch_size,20,63])
+            #max idx acros the rows
+            max_idx_l=tf.argmax(l,2).eval()
+            true_word = vecmp.map_vec_pos2words(max_idx_l[batch_idx,:])
+
             
-            vecmp.map_vec2words(batch_ys[batch_idx,:])
-            vecmp.map_vec2words(pp[batch_idx,:])
-            
-            print("true : {}, predicted {}".format(captcha_text[k], vecmp.map_ve2words(batch_ys[batch_idx,:])
+            print("true : {}, predicted {}".format(true_word, predicted_word)
 
             epoch+=1
         

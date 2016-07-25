@@ -78,10 +78,22 @@ def random_batch(X,Y, batch_size=128):
 
 def map_char2pos(c):
     """
+    Helper function for on-hot vector char encoding, we have 63 chars each index coresponds
+    to particular char
+    
     returns index/position of char passed in argument for sequence
     '0...9A...Za...z_'
     char 0 has an index 0
     char A has an index 10 etc.
+    
+    Arguments
+    ==========
+    c - single char
+    
+    return
+    ==========
+    position in 63 dimensional vector, at which index 
+    
     """
     
     if c =='_':
@@ -152,6 +164,9 @@ def map_words2vec(words):
     numpy array, 1260 dim
     
     """
+    
+    word_len = len(words)
+    
     vector = np.zeros(20*63)
     
     if len(words)>20:
@@ -174,6 +189,21 @@ def map_vec2words(vec):
         
     chars_pos = vec.nonzero()[0]
     
+    return map_vec_pos2words(chars_pos)
+    
+  
+    
+    
+    
+def map_vec_pos2words(chars_pos):
+    '''
+    
+    
+    Arguments
+    ==========
+    chars_pos - array-like, contains position of each char, eg. [10, 5, ...], represents at 0 postion char A, 1-st char 5, whole word is A5
+    '''
+
     word=list()
     
     for i, c in enumerate(chars_pos):
@@ -195,4 +225,6 @@ def map_vec2words(vec):
         word.append(chr(char_code))
       
     return "".join(word)
+    
+    
     
