@@ -54,3 +54,28 @@ for sp in split_y2:
     splits2.append(sp.eval())
 
 nsplits2= np.array(splits2)    
+
+
+
+chars_pos = max_idx_l[0,:]
+word=list()
+
+for i, c in enumerate(chars_pos):
+    char_at_pos = i #c/63
+    char_idx = c%63
+    
+    if char_idx<10:
+        char_code= char_idx+ ord('0')
+    elif char_idx <36:
+        char_code= char_idx-10 + ord('A')
+    elif char_idx < 62:
+        char_code= char_idx-36 + ord('a')
+    elif char_idx == 62:
+        char_code = ord('_')
+    else:
+        raise ValueError('not recognized char code')
+        
+    
+    word.append(chr(char_code))
+  
+"".join(word)

@@ -202,7 +202,7 @@ with tf.Session() as sess:
             batch_loss = sess.run(loss, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 1.})
             losses.append(batch_loss)
             
-            print "Iter " + str(step*batch_size) + " started={}".format(dt.datetime.now()) + ", Minibatch Loss= " + "{:.6f}".format(batch_loss) + ", Training Accuracy= " + "{}".format(acc)
+            print("Iter " + str(step*batch_size) + " started={}".format(dt.datetime.now()) + ", Minibatch Loss= " + "{:.6f}".format(batch_loss) + ", Training Accuracy= " + "{}".format(acc))
             
             batch_idx=0
             k=idx[batch_idx]
@@ -227,9 +227,9 @@ with tf.Session() as sess:
         step += 1
         
     end_epoch = dt.datetime.now()
-    print "Optimization Finished, end={} duration={}".format(end_epoch,end_epoch-start_epoch)
+    print("Optimization Finished, end={} duration={}".format(end_epoch,end_epoch-start_epoch))
     # Calculate accuracy 
-    print "Testing Accuracy:", sess.run(accuracy, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 1.})
+    print("Testing Accuracy:", sess.run(accuracy, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 1.}))
     
 
 import matplotlib.pyplot as plt
