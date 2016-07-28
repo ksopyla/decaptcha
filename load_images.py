@@ -110,7 +110,7 @@ print("Avg number of chars: {}".format(avg_letters))
 print("Max number of chars: {}".format(max_letters))
 
 df = pd.DataFrame(captcha_files)
-print df.describe()
+print(df.describe())
 
 
 # np.histogram(img_sizes)
