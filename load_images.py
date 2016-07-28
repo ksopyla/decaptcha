@@ -5,14 +5,10 @@ import os
 import vec_mappings as vecmap
 
 
-folder="./shared/Captcha/img/"
-file = "1864_shste"
-path= folder+file
-
+folder="/home/ksopyla/dev/data/captcha_img/"
 
 #probability of showing the images, higher shows less images
 show_prob=0.99
-
 
 file_list = os.listdir(folder)
 
@@ -51,7 +47,7 @@ for i, file in enumerate(file_list):
     im_shape = img.shape
     
     if len(im_shape)>2:
-        print file
+        print(file)
         #break
     
         #convert to gray img

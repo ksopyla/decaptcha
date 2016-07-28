@@ -9,7 +9,7 @@ import datetime as dt
 import vec_mappings as vecmp
 
 
-X, Y, captcha_text = vecmp.load_dataset()
+X, Y, captcha_text = vecmp.load_dataset('/home/ksopyla/dev/data/captcha_img/')
 
 # X = X[0:128,:]
 # Y = Y[0:128,:]
