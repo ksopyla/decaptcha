@@ -1,0 +1,8 @@
+
+#find files with file_nem longer than 20 letters and move them to folder long_names
+find -regextype posix-extended -regex '.{22,}' -exec mv {} ./long_names \;
+
+
+
+#find files with non asci characters
+find . -print0 | perl -n0e 'chomp; print $_, "\n" if /[[:^ascii:][:cntrl:]]/'
