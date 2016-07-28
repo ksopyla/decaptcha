@@ -5,10 +5,14 @@ import os
 import vec_mappings as vecmap
 
 
-folder="/home/ksopyla/dev/data/captcha_img/"
+folder="./shared/Captcha/img/"
+file = "1864_shste"
+path= folder+file
+
 
 #probability of showing the images, higher shows less images
 show_prob=0.995
+
 
 file_list = os.listdir(folder)
 
@@ -80,8 +84,8 @@ for i, file in enumerate(file_list):
     # file with padded text with '_', each captach has 20 char lenght
     captcha_text = file.ljust(20,'_')
     
-    X[i,:] = im_pad.flatten()
-    Y[i,:] = vecmap.map_words2vec(captcha_text)
+    #X[i,:] = im_pad.flatten()
+    #Y[i,:] = vecmap.map_words2vec(captcha_text)
     
     
     
@@ -106,7 +110,7 @@ print("Avg number of chars: {}".format(avg_letters))
 print("Max number of chars: {}".format(max_letters))
 
 df = pd.DataFrame(captcha_files)
-print(df.describe())
+print df.describe()
 
 
 # np.histogram(img_sizes)
