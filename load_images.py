@@ -8,7 +8,7 @@ import vec_mappings as vecmap
 folder="/home/ksopyla/dev/data/captcha_img/"
 
 #probability of showing the images, higher shows less images
-show_prob=0.99
+show_prob=0.995
 
 file_list = os.listdir(folder)
 
@@ -19,6 +19,7 @@ img_sizes = list()
 letters=list()
 
 max_letters=0
+min_letters=1000000
 avg_letters=0.0
 counter=0.0
 
@@ -33,13 +34,21 @@ X = np.zeros([N, 64*304])
 # 20x63= 1260
 Y = np.zeros([N, 20*63])
 
+import pandas as pd
+
+captcha_files = []
 
 for i, file in enumerate(file_list):
     
+    
     cur_letters = len(file)
+    
+    captcha_files.append( {'file': file, 'chars': cur_letters })
+    
     letters.append(cur_letters)
     counter+=1
     max_letters = max(max_letters, cur_letters)
+    min_letters = min(min_letters, cur_letters)
     avg_letters +=cur_letters
     path=folder+file
     img = imread(path)
@@ -47,7 +56,7 @@ for i, file in enumerate(file_list):
     im_shape = img.shape
     
     if len(im_shape)>2:
-        print(file)
+        print('incorrect shape {} file={}'.format(im_shape,file))
         #break
     
         #convert to gray img
@@ -90,7 +99,16 @@ for i, file in enumerate(file_list):
         #break
         pass
     
+
 avg_letters/=counter
+print("Number of files: {}".format(len(file_list)))
+print("Avg number of chars: {}".format(avg_letters))
+print("Max number of chars: {}".format(max_letters))
+
+df = pd.DataFrame(captcha_files)
+print df.describe()
+
+
 # np.histogram(img_sizes)
 # plt.hist(img_sizes)
 
