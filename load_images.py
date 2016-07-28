@@ -60,7 +60,7 @@ for i, file in enumerate(file_list):
     im_shape = img.shape
     
     if len(im_shape)>2:
-        print file
+        print('incorrect shape {} file={}'.format(im_shape,file))
         #break
     
         #convert to gray img
