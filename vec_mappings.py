@@ -3,7 +3,7 @@ import os
 from scipy.misc import imread
 
 
-def load_dataset(folder="./shared/Captcha/img/"):
+def load_dataset(folder="./shared/Captcha/img/", max_files=float('inf')):
     
     #folder="./shared/Captcha/img/"
     
@@ -11,6 +11,8 @@ def load_dataset(folder="./shared/Captcha/img/"):
     
     # number of files
     N =len([name for name in os.listdir(folder)])
+    
+    N = min(max_files,N)
     
     # stores images #N x 19456 (64*304)
     X = np.zeros([N, 64*304])
@@ -22,6 +24,9 @@ def load_dataset(folder="./shared/Captcha/img/"):
     
     
     for i, file in enumerate(file_list):
+        
+        if(i>N):
+            break
         
         path=folder+file
         img = imread(path)
@@ -42,7 +47,7 @@ def load_dataset(folder="./shared/Captcha/img/"):
             # dimensions divided by 2, we add 4 pixesl at the top
             # 3 pixesl at the bottom and 2 to left and right
             # TODO: change it to more automatic way, what if image size will be 
-            # different than 57.300?
+            # different than 57x300?
             im_pad = np.pad(img,((4,3),(2,2)), 'constant', constant_values=(255,))
             
         
@@ -122,7 +127,7 @@ def map_char2pos(c):
             # so we have to substract 97-36=61
             k=ord(c)-61
             if k >61:
-                raise ValueError('wrong character') 
+                raise ValueError('Wrong character {} its code={}'.format(c,k)) 
     
     return k    
     

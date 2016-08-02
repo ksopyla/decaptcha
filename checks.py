@@ -28,7 +28,7 @@ plt.imshow(X[k,:].reshape(64,304),cmap='Greys_r')
 plt.imshow(batch_xs[batch_idx,:].reshape(64,304),cmap='Greys_r')
 
 
-
+sess = tf.InteractiveSession()
 #run network, you have to create session and run the pred network definition in decapcha_convnet.py
 pp = sess.run(pred, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 1.})
 

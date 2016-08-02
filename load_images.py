@@ -6,11 +6,12 @@ import vec_mappings as vecmap
 
 
 folder="./shared/Captcha/img/"
-folder="/home/ksopyla/dev/data/captcha_img/"
+file = "1864_shste"
+path= folder+file
 
 
 #probability of showing the images, higher shows less images
-show_prob=0.995
+show_prob=0.997
 
 
 file_list = os.listdir(folder)
