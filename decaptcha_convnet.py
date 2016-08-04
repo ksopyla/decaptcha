@@ -131,8 +131,10 @@ pred = conv_net(x, weights, biases, keep_prob)
 # # global reduce    
 # loss = tf.reduce_sum(rcosts)
 
-loss = tf.nn.sigmoid_cross_entropy_with_logits(pred,y)
 
+
+cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(pred,y)
+loss = tf.reduce_mean(cross_entropy)
 
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
 
@@ -211,7 +213,7 @@ with tf.Session() as sess:
             batch_loss = sess.run(loss, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 1.})
             losses.append(batch_loss)
             
-            print("Iter " + str(step*batch_size) + " started={}".format(dt.datetime.now()) + ", Minibatch Loss= " + "{:.6f}".format(batch_loss) + ", Training Accuracy= " + "{}".format(acc))
+            print("Iter " + str(step*batch_size) + " started={}".format(dt.datetime.now()) + ", Minibatch Loss= " + "{}".format(batch_loss) + ", Training Accuracy= " + "{}".format(acc))
             
             batch_idx=0
             k=idx[batch_idx]
@@ -232,10 +234,14 @@ with tf.Session() as sess:
             print("true : {}, predicted {}".format(true_word, predicted_word))
 
             
-            save_path = saver.save(sess, "./model_sigmoid.ckpt")
+            
             epoch+=1
         
         step += 1
+        
+        if step%500==0:
+            save_path = saver.save(sess, "./model_sigmoid.ckpt")
+        
         
     end_epoch = dt.datetime.now()
     print("Optimization Finished, end={} duration={}".format(end_epoch,end_epoch-start_epoch))
