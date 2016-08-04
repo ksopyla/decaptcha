@@ -17,7 +17,7 @@ X, Y, captcha_text = vecmp.load_dataset('/home/ksopyla/dev/data/captcha_img/')
 # Parameters
 learning_rate = 0.001
 batch_size = 64
-training_iters =1000*batch_size # 128*5000
+training_iters =100000*batch_size # 128*5000
 display_step = 1
 
 # Network Parameters
