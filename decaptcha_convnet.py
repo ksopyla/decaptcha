@@ -9,15 +9,16 @@ import datetime as dt
 import vec_mappings as vecmp
 
 
-X, Y, captcha_text = vecmp.load_dataset('/home/ksopyla/dev/data/captcha_img/')
+X, Y, captcha_text = vecmp.load_dataset(folder='/home/ksopyla/dev/data/captcha_img/', max_files=4000)
 
 # X = X[0:128,:]
 # Y = Y[0:128,:]
 
 # Parameters
 learning_rate = 0.001
-batch_size = 64
-training_iters =100000*batch_size # 128*5000
+batch_size = 32 
+training_iters =100*batch_size # 128*5000
+#training_iters =50*batch_size # 128*5000
 display_step = 1
 
 # Network Parameters
@@ -85,10 +86,10 @@ def conv_net(_X, _weights, _biases, _dropout):
 
 # Store layers weight & bias
 weights = {
-    'wc1': tf.Variable(tf.random_normal([5, 5, 1, 32])), # 5x5 conv, 1 input, 32 outputs
+    'wc1': tf.Variable(tf.random_normal([3, 3, 1, 32])), # 3x3 conv, 1 input, 32 outputs
     #'wc11': tf.Variable(tf.random_normal([3, 3, 32, 32])), # 3x3 conv, 32 input, 32 outputs
-    'wc2': tf.Variable(tf.random_normal([5, 5, 32, 64])), # 5x5 conv, 32 inputs, 64 outputs
-    #'wc22': tf.Variable(tf.random_normal([3, 3, 64, 64])), # 5x5 conv, 32 inputs, 64 outputs
+    'wc2': tf.Variable(tf.random_normal([3, 3, 32, 64])), # 3x3 conv, 32 inputs, 64 outputs
+    #'wc22': tf.Variable(tf.random_normal([3, 3, 64, 64])), # 3x3 conv, 32 inputs, 64 outputs
     'wc3': tf.Variable(tf.random_normal([3, 3, 64, 64])), # 3x3 conv, 64 inputs, 64 outputs
     'wd1': tf.Variable(tf.random_normal([8*38*64, 1024])), # fully connected, 64/(2*2*2)=8, 304/(2*2*2)=38 (three max pool k=2) inputs, 1024 outputs
     #'out': tf.Variable(tf.random_normal([1024, n_classes])) 
@@ -110,23 +111,30 @@ pred = conv_net(x, weights, biases, keep_prob)
 
 # Define loss and optimizer
 
+
+############
+# splited softmax_cross_entropy loss
 #split prediction for each char it takes 63 continous postions, we have 20 chars
-split_pred = tf.split(1,20,pred)
-split_y = tf.split(1,20,y)
+# split_pred = tf.split(1,20,pred)
+# split_y = tf.split(1,20,y)
 
 
-#compute partial softmax cost, for each char
-costs = list()
-for i in range(20):
-    costs.append(tf.nn.softmax_cross_entropy_with_logits(split_pred[i],split_y[i]))
+# #compute partial softmax cost, for each char
+# costs = list()
+# for i in range(20):
+#     costs.append(tf.nn.softmax_cross_entropy_with_logits(split_pred[i],split_y[i]))
     
-#reduce cost for each char
-rcosts = list()
-for i in range(20):
-    rcosts.append(tf.reduce_mean(costs[i]))
+# #reduce cost for each char
+# rcosts = list()
+# for i in range(20):
+#     rcosts.append(tf.reduce_mean(costs[i]))
     
-# global reduce    
-loss = tf.reduce_sum(rcosts)
+# # global reduce    
+# loss = tf.reduce_sum(rcosts)
+
+loss = tf.nn.sigmoid_cross_entropy_with_logits(pred,y)
+
+
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
 
 
@@ -171,6 +179,8 @@ init = tf.initialize_all_variables()
 losses = list()
 accuracies = list()
 
+saver = tf.train.Saver()
+
 # Launch the graph
 with tf.Session() as sess:
     sess.run(init)
@@ -202,7 +212,7 @@ with tf.Session() as sess:
             batch_loss = sess.run(loss, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 1.})
             losses.append(batch_loss)
             
-            print("Iter " + str(step*batch_size) + " started={}".format(dt.datetime.now()) + ", Minibatch Loss= " + "{:.6f}".format(batch_loss) + ", Training Accuracy= " + "{}".format(acc))
+            print("Iter " + str(step*batch_size) + " started={}".format(dt.datetime.now()) + ", Minibatch Loss= " + "{}".format(batch_loss) + ", Training Accuracy= " + "{}".format(acc))
             
             batch_idx=0
             k=idx[batch_idx]
@@ -222,12 +232,19 @@ with tf.Session() as sess:
             
             print("true : {}, predicted {}".format(true_word, predicted_word))
 
+            
+            save_path = saver.save(sess, "./model_sigmoid.ckpt")
             epoch+=1
         
         step += 1
         
     end_epoch = dt.datetime.now()
     print("Optimization Finished, end={} duration={}".format(end_epoch,end_epoch-start_epoch))
+    
+    
+    test_size = min(1000, X.shape[0])
+    test_X = X[0:test_size,:]
+    test_Y = Y[0:test_size,:]
     # Calculate accuracy 
     print("Testing Accuracy:", sess.run(accuracy, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 1.}))
     

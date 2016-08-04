@@ -11,6 +11,7 @@ batch_idx=0
 
 batch_xs, batch_ys, idx = vecmp.random_batch(X, Y, batch_size)
 
+batch_cap = [ captcha_text[i] for i in idx]
 
 k=idx[batch_idx]
 
@@ -24,9 +25,37 @@ vecmp.map_vec2words(batch_ys[batch_idx,:])
 
 
 #show images
-plt.imshow(X[k,:].reshape(64,304),cmap='Greys_r')
-plt.imshow(batch_xs[batch_idx,:].reshape(64,304),cmap='Greys_r')
 
+for i in range(5):
+    k=idx[i]
+    title = batch_cap[i]
+    plt.imshow(X[k,:].reshape(64,304),cmap='Greys_r')
+    plt.title(title)
+    plt.show()
+    print('batch img')
+    plt.imshow(batch_xs[i,:].reshape(64,304),cmap='Greys_r')
+    plt.title(title)
+    plt.show()
+
+########################3
+# run optimizer
+sess = tf.InteractiveSession()
+sess.run(init)
+saver = tf.train.Saver()
+import datetime as dt
+for i in range(101):
+    batch_xs, batch_ys, idx = vecmp.random_batch(X, Y, batch_size)
+    # Fit training using batch data
+    
+    print("#{} opt step {}".format(i,dt.datetime.now()))
+    sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys, keep_prob: dropout})
+    print("end step {}\n".format(dt.datetime.now())) 
+    
+    if i%20 ==0:
+        save_path = saver.save(sess, "./model.ckpt")
+        
+        
+###################
 
 
 #run network, you have to create session and run the pred network definition in decapcha_convnet.py
@@ -44,38 +73,36 @@ max_idx_l=tf.argmax(l,2).eval()
 #max_idx_l=tf.argmax(l,2)
 
 correct_pred = tf.equal(max_idx_p,max_idx_l)
+accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
 
 
-# check how spliting is done
-split_y2 = tf.split(1,20,batch_ys)
-splits2=list()
-for sp in split_y2:
-    splits2.append(sp.eval())
+###############################
+# loss func
+#split prediction for each char it takes 63 continous postions, we have 20 chars
 
-nsplits2= np.array(splits2)    
+split_pred = tf.split(1,20,pp)
+split_y = tf.split(1,20,batch_ys)
+
+sp1=split_y[0].eval()
+for i in range(64):
+    check_match = batch_cap[i][0]==vecmp.map_vec2words(sp1[i])
+    print "{} true={} split={}".format(check_match,batch_cap[i][0],vecmp.map_vec2words(sp1[i]))
 
 
 
-chars_pos = max_idx_l[0,:]
-word=list()
+#tf.nn.sigmoid_cross_entropy_with_logits
 
-for i, c in enumerate(chars_pos):
-    char_at_pos = i #c/63
-    char_idx = c%63
+#compute partial softmax cost, for each char
+costs = list()
+for i in range(20):
+    costs.append(tf.nn.softmax_cross_entropy_with_logits(split_pred[i],split_y[i]))
     
-    if char_idx<10:
-        char_code= char_idx+ ord('0')
-    elif char_idx <36:
-        char_code= char_idx-10 + ord('A')
-    elif char_idx < 62:
-        char_code= char_idx-36 + ord('a')
-    elif char_idx == 62:
-        char_code = ord('_')
-    else:
-        raise ValueError('not recognized char code')
-        
+#reduce cost for each char
+rcosts = list()
+for i in range(20):
+    rcosts.append(tf.reduce_mean(costs[i]))
     
-    word.append(chr(char_code))
-  
-"".join(word)
+# global reduce    
+loss = tf.reduce_sum(rcosts)
+optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
