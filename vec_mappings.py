@@ -25,7 +25,7 @@ def load_dataset(folder="./shared/Captcha/img/", max_files=float('inf')):
     
     for i, file in enumerate(file_list):
         
-        if(i>N):
+        if(i>=N):
             break
         
         path=folder+file
@@ -83,7 +83,7 @@ def random_batch(X,Y, batch_size=128):
 
 def map_char2pos(c):
     """
-    Helper function for on-hot vector char encoding, we have 63 chars each index coresponds
+    Helper function for one-hot vector char encoding, we have 63 chars each index coresponds
     to particular char
     
     returns index/position of char passed in argument for sequence

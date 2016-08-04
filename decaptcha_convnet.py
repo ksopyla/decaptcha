@@ -110,23 +110,30 @@ pred = conv_net(x, weights, biases, keep_prob)
 
 # Define loss and optimizer
 
+
+############
+# splited softmax_cross_entropy loss
 #split prediction for each char it takes 63 continous postions, we have 20 chars
-split_pred = tf.split(1,20,pred)
-split_y = tf.split(1,20,y)
+# split_pred = tf.split(1,20,pred)
+# split_y = tf.split(1,20,y)
 
 
-#compute partial softmax cost, for each char
-costs = list()
-for i in range(20):
-    costs.append(tf.nn.softmax_cross_entropy_with_logits(split_pred[i],split_y[i]))
+# #compute partial softmax cost, for each char
+# costs = list()
+# for i in range(20):
+#     costs.append(tf.nn.softmax_cross_entropy_with_logits(split_pred[i],split_y[i]))
     
-#reduce cost for each char
-rcosts = list()
-for i in range(20):
-    rcosts.append(tf.reduce_mean(costs[i]))
+# #reduce cost for each char
+# rcosts = list()
+# for i in range(20):
+#     rcosts.append(tf.reduce_mean(costs[i]))
     
-# global reduce    
-loss = tf.reduce_sum(rcosts)
+# # global reduce    
+# loss = tf.reduce_sum(rcosts)
+
+loss = tf.nn.sigmoid_cross_entropy_with_logits(pred,y)
+
+
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
 
 
@@ -170,6 +177,8 @@ init = tf.initialize_all_variables()
 
 losses = list()
 accuracies = list()
+
+saver = tf.train.Saver()
 
 # Launch the graph
 with tf.Session() as sess:
@@ -222,6 +231,8 @@ with tf.Session() as sess:
             
             print("true : {}, predicted {}".format(true_word, predicted_word))
 
+            
+            save_path = saver.save(sess, "./model_sigmoid.ckpt")
             epoch+=1
         
         step += 1
