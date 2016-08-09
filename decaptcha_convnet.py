@@ -9,7 +9,7 @@ import datetime as dt
 import vec_mappings as vecmp
 
 
-X, Y, captcha_text = vecmp.load_dataset(max_files=4000)
+X, Y, captcha_text = vecmp.load_dataset(max_files=6000)
 
 # X = X[0:128,:]
 # Y = Y[0:128,:]
@@ -17,8 +17,8 @@ X, Y, captcha_text = vecmp.load_dataset(max_files=4000)
 # Parameters
 learning_rate = 0.001
 batch_size = 64
-training_iters =50*batch_size # 128*5000
-display_step = 1
+training_iters =10000*batch_size # 128*5000
+display_step = 10
 
 # Network Parameters
 n_input = 64*304 # captcha images has 64x304 size
