@@ -5,102 +5,132 @@ from PIL import ImageFont
 
 import matplotlib.pyplot as plt
 
+import time
+
+
 def getSize(txt, font):
     testImg = Image.new('RGB', (1, 1))
     testDraw = ImageDraw.Draw(testImg)
     return testDraw.textsize(txt, font)
 
 
+def genDigitsImg(numbers,font,img_size=(64,32), colorBackground = "white",    colorText = "black"):
+    '''
+    Generates one image with random digits with specified font
+    
+    numbers - numpy array with digits
+    img_size - tuple of img width and height
+    
+    font - PIL font object
+    
+    Returns
+    ===========
+    img - PIL img object
+    
+    '''
+    digit_offset=5
+    dh=9 #height offset
+    angle_var=20
 
+
+    img = Image.new('RGBA', img_size, colorBackground)
+
+    for i,nr in enumerate(numbers):
+        
+        digit_str = str(nr)
+        fw, fh=font.getsize(digit_str)
+        im1 = Image.new('RGBA',(fw,fh),colorBackground)
+        #im1 = Image.new('RGBA',(patch_size,patch_size),colorBackground)
+        
+        d1  = ImageDraw.Draw(im1)
+        
+        d1.text( (0,-dh),digit_str,font=font, fill=colorText)
+        #d1.rectangle((0, 0, w, h), outline=colorOutline)
+        
+        angle = rnd.randint(-angle_var,angle_var)    
+        #im1_rot=im1.rotate(angle, resample=Image.BILINEAR,  expand=1)
+        im1_rot=im1.rotate(angle, resample=Image.BICUBIC,  expand=1)
+        #print 'im1_rot size', im1_rot.size
+    
+        pad_w = rnd.randint(-5,6)
+        pad_h = rnd.randint(10)
+        
+        pos_w = digit_offset+pad_w
+        #print pos_w
+        img.paste(im1_rot,(pos_w,pad_h),im1_rot)
+        
+        
+        digit_offset=pos_w+im1_rot.size[0]
+        #print digit_offset
+        
+    return img
+    
+    
+    
+    
 
 
 
 fontname = "Generate/OpenSans-Regular.ttf"
-fontsize = 24   
+fontsize = 26   
 font = ImageFont.truetype(fontname, fontsize)
-text = "Hello world"
+
 
 colorText = "black"
-colorOutline = "red"
 colorBackground = "white"
-
-
-
-#################################3
-
-img = Image.new('RGB', (width+40, height+40), colorBackground)
-d = ImageDraw.Draw(img)
-d.text( (5, 5), text,  font=font, fill=colorText)
-w=txt.rotate(17.5,  expand=1)
-
-plt.imshow(w)
-
-#########################
-
-width, height = font.getsize(text)
-
-image1 = Image.new('RGBA', (200, 150), colorBackground)
-draw1 = ImageDraw.Draw(image1)
-draw1.text((10, 10), text=text, font=font, fill=colorText)
-plt.imshow(image1)
-
-image2 = Image.new('RGBA', (width+10, height+10), colorBackground)
-draw2 = ImageDraw.Draw(image2)
-draw2.text((5, 0), text=text, font=font, fill=colorText)
-
-plt.imshow(image2)
-
-image2 = image2.rotate(30, expand=1)
-
-px, py = 10, 10
-sx, sy = image2.size
-image1.paste(image2, (px, py, px + sx, py + sy), image2)
-
-plt.imshow(image1)
-
 
 #####
 
 import numpy.random as rnd
-
-numbers = [3,4,5,8]
-
-img = Image.new('RGBA', (96, 32), colorBackground)
-
 patch_size=32
 dh=9 #height offset
+angle_var=20
 
-digit_offset=0
+folder='shared/Digits_2/'
 
-for i,nr in enumerate(numbers):
-    
-    digit_str = str(nr)
-    fw, fh=font.getsize(digit_str)
-    im1 = Image.new('RGBA',(fw,fh),colorBackground)
-    #im1 = Image.new('RGBA',(patch_size,patch_size),colorBackground)
-    
-    d1  = ImageDraw.Draw(im1)
-    
-    d1.text( (0,-dh),digit_str,font=font, fill=colorText)
-    #d1.rectangle((0, 0, w, h), outline=colorOutline)
-    
-    angle = rnd.randint(-30,30)    
-    #im1_rot=im1.rotate(angle, resample=Image.BILINEAR,  expand=1)
-    im1_rot=im1.rotate(angle, resample=Image.BICUBIC,  expand=1)
-    print 'im1_rot size', im1_rot.size
 
-    pad_w = rnd.randint(1,6)
-    pad_h = rnd.randint(5)
-    
-    pos_w = digit_offset+pad_w
-    print pos_w
-    img.paste(im1_rot,(pos_w,pad_h),im1_rot)
-    
-    
-    digit_offset=pos_w+im1_rot.size[0]
-    print digit_offset
+for a in range(20):
 
-plt.imshow(img)
+    numbers = rnd.choice(10,2, replace=True)    
+    numbers_str = ''.join([str(x) for x in numbers])
+    digit_offset=5
+    
+    img = genDigitsImg(numbers,font,img_size=(56,32))
+    
+    # img = Image.new('RGBA', (56, 32), colorBackground)
+
+    # for i,nr in enumerate(numbers):
+        
+    #     digit_str = str(nr)
+    #     fw, fh=font.getsize(digit_str)
+    #     im1 = Image.new('RGBA',(fw,fh),colorBackground)
+    #     #im1 = Image.new('RGBA',(patch_size,patch_size),colorBackground)
+        
+    #     d1  = ImageDraw.Draw(im1)
+        
+    #     d1.text( (0,-dh),digit_str,font=font, fill=colorText)
+    #     #d1.rectangle((0, 0, w, h), outline=colorOutline)
+        
+    #     angle = rnd.randint(-angle_var,angle_var)    
+    #     #im1_rot=im1.rotate(angle, resample=Image.BILINEAR,  expand=1)
+    #     im1_rot=im1.rotate(angle, resample=Image.BICUBIC,  expand=1)
+    #     #print 'im1_rot size', im1_rot.size
+    
+    #     pad_w = rnd.randint(-5,6)
+    #     pad_h = rnd.randint(10)
+        
+    #     pos_w = digit_offset+pad_w
+    #     #print pos_w
+    #     img.paste(im1_rot,(pos_w,pad_h),im1_rot)
+        
+        
+    #     digit_offset=pos_w+im1_rot.size[0]
+    #     #print digit_offset
+    
+    #img.save('{}{}_{}.png'.format(folder,numbers_str,int(time.time())))
+    plt.imshow(img)
+    plt.show()
+    time.sleep(0.5)
 
 
 
