@@ -25,8 +25,8 @@ X = (Xdata-x_mean)/(x_std+0.00001)
 # Parameters
 learning_rate = 0.001
 batch_size = 64
-training_iters =50000*batch_size # 128*5000
-display_step = 500
+training_iters =500*batch_size # 128*5000
+display_step = 50
 
 # Network Parameters
 n_input = 64*304 # captcha images has 64x304 size
@@ -158,12 +158,12 @@ optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
 # then sum all good results and compute mean (accuracy)
 
 #batch, rows, cols
-p = tf.reshape(pred,[batch_size,20,63])
+p = tf.reshape(pred,[-1,20,63])
 #max idx acros the rows
 #max_idx_p=tf.argmax(p,2).eval()
 max_idx_p=tf.argmax(p,2)
 
-l = tf.reshape(y,[batch_size,20,63])
+l = tf.reshape(y,[-1,20,63])
 #max idx acros the rows
 #max_idx_l=tf.argmax(l,2).eval()
 max_idx_l=tf.argmax(l,2)
@@ -207,10 +207,12 @@ with tf.Session() as sess:
         
         
         # Fit training using batch data
-        print("##############")
-        print("opt step {}".format(dt.datetime.now()))
+        
+        start_op = dt.datetime.now()
+        
         sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys, keep_prob: dropout})
-        print("end step {}".format(dt.datetime.now()))        
+        end_op = dt.datetime.now()
+        print("#{} opt step {} {} takes {}".format(step,start_op,end_op, end_op-start_op))
         
         if step % display_step == 0:
             
@@ -250,7 +252,8 @@ with tf.Session() as sess:
         
         step += 1
         
-        if step%500==0:
+        if step%1000==0:
+            print('saving...')
             save_path = saver.save(sess, "./model_sigmoid.ckpt")
         
         
@@ -277,4 +280,5 @@ plt.title('Loss function')
 plt.subplot(212)
 plt.plot(accuracies, '-r', label='Acc')
 plt.title('Accuracy')
-    
+plt.savefig('loss_acc_plot.png')   
+ 
