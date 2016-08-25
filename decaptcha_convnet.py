@@ -11,13 +11,21 @@ import vec_mappings as vecmp
 
 X, Y, captcha_text = vecmp.load_dataset(max_files=6000)
 
-# X = X[0:128,:]
-# Y = Y[0:128,:]
+# invert and normalize to [0,1]
+#X =  (255- Xdata)/255.0
+
+
+# standarization 
+#compute mean across the rows, sum elements from each column and divide
+x_mean = Xdata.mean(axis=0)
+x_std  = Xdata.std(axis=0)
+X = (Xdata-x_mean)/(x_std+0.00001)
+
 
 # Parameters
 learning_rate = 0.001
 batch_size = 64
-training_iters =10000*batch_size # 128*5000
+training_iters =100*batch_size # 128*5000
 display_step = 10
 
 # Network Parameters
@@ -84,24 +92,27 @@ def conv_net(_X, _weights, _biases, _dropout):
     return out
 
 # Store layers weight & bias
+
+alpha=0.1
+
 weights = {
-    'wc1': tf.Variable(tf.random_normal([3, 3, 1, 32])), # 3x3 conv, 1 input, 32 outputs
-    #'wc11': tf.Variable(tf.random_normal([3, 3, 32, 32])), # 3x3 conv, 32 input, 32 outputs
-    'wc2': tf.Variable(tf.random_normal([3, 3, 32, 64])), # 3x3 conv, 32 inputs, 64 outputs
-    #'wc22': tf.Variable(tf.random_normal([3, 3, 64, 64])), # 3x3 conv, 32 inputs, 64 outputs
-    'wc3': tf.Variable(tf.random_normal([3, 3, 64, 64])), # 3x3 conv, 64 inputs, 64 outputs
-    'wd1': tf.Variable(tf.random_normal([8*38*64, 1024])), # fully connected, 64/(2*2*2)=8, 304/(2*2*2)=38 (three max pool k=2) inputs, 1024 outputs
-    #'out': tf.Variable(tf.random_normal([1024, n_classes])) 
-    'out': tf.Variable(tf.random_normal([1024, 20*63])) # 1024 inputs, 20*63 outputs for one catpcha word (max 20chars)
+    'wc1': tf.Variable(alpha*tf.random_normal([3, 3, 1, 32])), # 3x3 conv, 1 input, 32 outputs
+    #'wc11': tf.Variable(alpha*tf.random_normal([3, 3, 32, 32])), # 3x3 conv, 32 input, 32 outputs
+    'wc2': tf.Variable(alpha*tf.random_normal([3, 3, 32, 64])), # 3x3 conv, 32 inputs, 64 outputs
+    #'wc22': tf.Variable(alpha*tf.random_normal([3, 3, 64, 64])), # 3x3 conv, 32 inputs, 64 outputs
+    'wc3': tf.Variable(alpha*tf.random_normal([3, 3, 64, 64])), # 3x3 conv, 64 inputs, 64 outputs
+    'wd1': tf.Variable(alpha*tf.random_normal([8*38*64, 1024])), # fully connected, 64/(2*2*2)=8, 304/(2*2*2)=38 (three max pool k=2) inputs, 1024 outputs
+    #'out': tf.Variable(alpha*tf.random_normal([1024, n_classes])) 
+    'out': tf.Variable(alpha*tf.random_normal([1024, 20*63])) # 1024 inputs, 20*63 outputs for one catpcha word (max 20chars)
 }
 
 biases = {
-    'bc1': tf.Variable(tf.random_normal([32])),
-    #'bc11': tf.Variable(tf.random_normal([32])),
-    'bc2': tf.Variable(tf.random_normal([64])),
-    #'bc22': tf.Variable(tf.random_normal([64])),
-    'bc3': tf.Variable(tf.random_normal([64])),
-    'bd1': tf.Variable(tf.random_normal([1024])),
+    'bc1': tf.Variable(alpha*tf.random_normal([32])),
+    #'bc11': tf.Variable(alpha*tf.random_normal([32])),
+    'bc2': tf.Variable(alpha*tf.random_normal([64])),
+    #'bc22': tf.Variable(alpha*tf.random_normal([64])),
+    'bc3': tf.Variable(alpha*tf.random_normal([64])),
+    'bd1': tf.Variable(alpha*tf.random_normal([1024])),
     'out': tf.Variable(tf.random_normal([20*63]))
 }
 
