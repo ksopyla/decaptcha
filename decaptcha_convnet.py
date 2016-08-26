@@ -29,7 +29,9 @@ training_iters =10000*batch_size # 128*5000
 display_step = 500
 
 # Network Parameters
-n_input = 64*304 # captcha images has 64x304 size
+img_h = 64
+img_w =304
+n_input = img_h*img_w # captcha images has 64x304 size
 n_classes = 20*63 # each word is encoded by 1260 vector
 dropout = 0.75 # Dropout, probability to keep units
 
@@ -47,7 +49,7 @@ def max_pool(img, k):
 
 def conv_net(_X, _weights, _biases, _dropout):
     # Reshape input picture
-    _X = tf.reshape(_X, shape=[-1, 64, 304, 1])
+    _X = tf.reshape(_X, shape=[-1, img_h, img_w, 1])
 
     # Convolution Layer 5x5x32 first, layer with relu
     conv1 = conv2d(_X, _weights['wc1'], _biases['bc1'])
@@ -93,17 +95,30 @@ def conv_net(_X, _weights, _biases, _dropout):
 
 # Store layers weight & bias
 
+#relu initialization
+init_wc1 = np.sqrt(2.0/(img_w*img_h)) #
+init_wc2 = np.sqrt(2.0/(3*3*32)) 
+init_wc3 = np.sqrt(2.0/(3*3*64)) 
+init_wd1 = np.sqrt(2.0/(8*38*64))
+init_out = np.sqrt(2.0/1024)
+
 alpha=0.1
+init_wc1 = alpha
+init_wc2 = alpha
+init_wc3 = alpha
+init_wd1 = alpha
+init_out =  alpha
+
 
 weights = {
-    'wc1': tf.Variable(alpha*tf.random_normal([3, 3, 1, 32])), # 3x3 conv, 1 input, 32 outputs
+    'wc1': tf.Variable(init_wc1*tf.random_normal([3, 3, 1, 32])), # 3x3 conv, 1 input, 32 outputs
     #'wc11': tf.Variable(alpha*tf.random_normal([3, 3, 32, 32])), # 3x3 conv, 32 input, 32 outputs
-    'wc2': tf.Variable(alpha*tf.random_normal([3, 3, 32, 64])), # 3x3 conv, 32 inputs, 64 outputs
+    'wc2': tf.Variable(init_wc2*tf.random_normal([3, 3, 32, 64])), # 3x3 conv, 32 inputs, 64 outputs
     #'wc22': tf.Variable(alpha*tf.random_normal([3, 3, 64, 64])), # 3x3 conv, 32 inputs, 64 outputs
-    'wc3': tf.Variable(alpha*tf.random_normal([3, 3, 64, 64])), # 3x3 conv, 64 inputs, 64 outputs
-    'wd1': tf.Variable(alpha*tf.random_normal([8*38*64, 1024])), # fully connected, 64/(2*2*2)=8, 304/(2*2*2)=38 (three max pool k=2) inputs, 1024 outputs
+    'wc3': tf.Variable(init_wc3*tf.random_normal([3, 3, 64, 64])), # 3x3 conv, 64 inputs, 64 outputs
+    'wd1': tf.Variable(init_wd1*tf.random_normal([8*38*64, 1024])), # fully connected, 64/(2*2*2)=8, 304/(2*2*2)=38 (three max pool k=2) inputs, 1024 outputs
     #'out': tf.Variable(alpha*tf.random_normal([1024, n_classes])) 
-    'out': tf.Variable(alpha*tf.random_normal([1024, 20*63])) # 1024 inputs, 20*63 outputs for one catpcha word (max 20chars)
+    'out': tf.Variable(init_out*tf.random_normal([1024, 20*63])) # 1024 inputs, 20*63 outputs for one catpcha word (max 20chars)
 }
 
 biases = {
@@ -273,7 +288,7 @@ import matplotlib.pyplot as plt
 # plt.plot(losses)
 # plt.plot(accuracies)
 
-plt.figure(1)
+imh=plt.figure(1)
 plt.subplot(211)
 plt.plot(losses, '-b', label='Loss')
 plt.title('Loss function')
