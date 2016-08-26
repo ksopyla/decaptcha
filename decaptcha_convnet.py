@@ -26,7 +26,7 @@ X = (Xdata-x_mean)/(x_std+0.00001)
 learning_rate = 0.001
 batch_size = 64
 training_iters =500*batch_size # 128*5000
-display_step = 50
+display_step = 500
 
 # Network Parameters
 n_input = 64*304 # captcha images has 64x304 size
