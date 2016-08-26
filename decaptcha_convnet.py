@@ -9,7 +9,8 @@ import datetime as dt
 import vec_mappings as vecmp
 
 
-Xdata, Y, captcha_text = vecmp.load_dataset(folder='/home/ksopyla/dev/data/captcha_img/')
+#Xdata, Y, captcha_text = vecmp.load_dataset(folder='/home/ksopyla/dev/data/captcha_img/')
+Xdata, Y, captcha_text = vecmp.load_dataset()
 
 # invert and normalize to [0,1]
 #X =  (255- Xdata)/255.0
