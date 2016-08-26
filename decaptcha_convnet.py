@@ -9,7 +9,7 @@ import datetime as dt
 import vec_mappings as vecmp
 
 
-Xdata, Y, captcha_text = vecmp.load_dataset()
+Xdata, Y, captcha_text = vecmp.load_dataset(folder='/home/ksopyla/dev/data/captcha_img/')
 
 # invert and normalize to [0,1]
 #X =  (255- Xdata)/255.0
@@ -25,8 +25,8 @@ X = (Xdata-x_mean)/(x_std+0.00001)
 # Parameters
 learning_rate = 0.001
 batch_size = 64
-training_iters =10000*batch_size # 128*5000
-display_step = 500
+training_iters =500*batch_size # 128*5000
+display_step = 50
 
 # Network Parameters
 img_h = 64
@@ -295,4 +295,5 @@ plt.title('Loss function')
 plt.subplot(212)
 plt.plot(accuracies, '-r', label='Acc')
 plt.title('Accuracy')
-    
+plt.savefig('loss_acc_plot.png')   
+ 
