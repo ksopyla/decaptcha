@@ -5,7 +5,7 @@ Author: ksopyla (krzysztofsopyla@gmail.com)
 
 import tensorflow as tf
 import datetime as dt
-
+import numpy as np
 import vec_mappings as vecmp
 
 
@@ -26,8 +26,8 @@ X = (Xdata-x_mean)/(x_std+0.00001)
 # Parameters
 learning_rate = 0.001
 batch_size = 64
-training_iters =500*batch_size # 128*5000
-display_step = 50
+training_iters =200 # 128*5000
+display_step = 100
 
 # Network Parameters
 img_h = 64
@@ -103,7 +103,7 @@ init_wc3 = np.sqrt(2.0/(3*3*64))
 init_wd1 = np.sqrt(2.0/(8*38*64))
 init_out = np.sqrt(2.0/1024)
 
-alpha=0.1
+alpha=0.01
 init_wc1 = alpha
 init_wc2 = alpha
 init_wc3 = alpha
@@ -123,13 +123,13 @@ weights = {
 }
 
 biases = {
-    'bc1': tf.Variable(alpha*tf.random_normal([32])),
-    #'bc11': tf.Variable(alpha*tf.random_normal([32])),
-    'bc2': tf.Variable(alpha*tf.random_normal([64])),
-    #'bc22': tf.Variable(alpha*tf.random_normal([64])),
-    'bc3': tf.Variable(alpha*tf.random_normal([64])),
-    'bd1': tf.Variable(alpha*tf.random_normal([1024])),
-    'out': tf.Variable(tf.random_normal([20*63]))
+    'bc1': tf.Variable(0.1*tf.random_normal([32])),
+    #'bc11': tf.Variable(tf.random_normal([32])),
+    'bc2': tf.Variable(0.1*tf.random_normal([64])),
+    #'bc22': tf.Variable(tf.random_normal([64])),
+    'bc3': tf.Variable(0.1*tf.random_normal([64])),
+    'bd1': tf.Variable(0.1*tf.random_normal([1024])),
+    'out': tf.Variable(0.1*tf.random_normal([20*63]))
 }
 
 # Construct model
@@ -212,13 +212,13 @@ saver = tf.train.Saver()
 # Launch the graph
 with tf.Session() as sess:
     sess.run(init)
-    step = 1
+    step = 0
     
     epoch=0
     start_epoch=dt.datetime.now()
     
     # Keep training until reach max iterations
-    while step * batch_size < training_iters:
+    while step <= training_iters:
         batch_xs, batch_ys, idx = vecmp.random_batch(X, Y, batch_size)
         
         
@@ -242,7 +242,7 @@ with tf.Session() as sess:
             batch_loss = sess.run(loss, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 1.})
             losses.append(batch_loss)
             
-            print("Iter " + str(step*batch_size) + " started={}".format(dt.datetime.now()) + ", Minibatch Loss= " + "{}".format(batch_loss) + ", Training Accuracy= " + "{}".format(acc))
+            print("##Iter " + str(step) +", Minibatch Loss= " + "{}".format(batch_loss) + ", Training Accuracy= " + "{}".format(acc))
             
             batch_idx=0
             k=idx[batch_idx]
@@ -268,33 +268,66 @@ with tf.Session() as sess:
         
         step += 1
         
-        if step%1000==0:
-            print('saving...')
-            save_path = saver.save(sess, "./model_sigmoid.ckpt")
+        # if step%10000==0:
+        #     print('saving...')
+        #     save_path = saver.save(sess, "./model_sigmoid.ckpt")
         
         
     end_epoch = dt.datetime.now()
     print("Optimization Finished, end={} duration={}".format(end_epoch,end_epoch-start_epoch))
     
     
-    test_size = min(1000, X.shape[0])
-    test_X = X[0:test_size,:]
-    test_Y = Y[0:test_size,:]
+    test_size = min(100, X.shape[0])
+    random_idx = np.random.choice(X.shape[0],test_size, replace=False)
+    test_X = X[random_idx,:]
+    test_Y = Y[random_idx,:]
     # Calculate accuracy 
-    print("Testing Accuracy:", sess.run(accuracy, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 1.}))
+    print("Testing Accuracy:", sess.run(accuracy, feed_dict={x: test_X, y: test_Y, keep_prob: 1.}))
+    test_size = min(100, X.shape[0])
+    random_idx = np.random.choice(X.shape[0],test_size, replace=False)
+    test_X = X[random_idx,:]
+    test_Y = Y[random_idx,:]
+    # Calculate accuracy 
+    print("Testing Accuracy:", sess.run(accuracy, feed_dict={x: test_X, y: test_Y, keep_prob: 1.}))
+    
+    
+    pp = sess.run(pred, feed_dict={x: test_X, y: test_Y, keep_prob: 1.})
+    p = tf.reshape(pp,[-1,20,63])
+    max_idx_p=tf.argmax(p,2).eval()
+    l = tf.reshape(test_Y,[-1,20,63])
+    #max idx acros the rows
+    max_idx_l=tf.argmax(l,2).eval()
+    
+    for k in range(test_size):
+        
+        true_word = vecmp.map_vec_pos2words(max_idx_l[k,:]) 
+        
+        predicted_word = vecmp.map_vec_pos2words(max_idx_p[k,:])
+        
+        got_error=''
+        if( true_word != predicted_word):
+            got_error='<--- error'
+        print("true : {}, predicted {} {}".format(true_word, predicted_word,got_error))        
+    
+    
+    
+    
     
 
 import matplotlib.pyplot as plt
 
-# plt.plot(losses)
-# plt.plot(accuracies)
+#iters_steps
+iter_steps = [ display_step*k for k in range((training_iters/display_step)+1)]
 
-imh=plt.figure(1)
+trainning_version = 'captcha_acc_init_const_{}.png'.format(alpha)
+
+imh =plt.figure(1)
+imh.suptitle(trainning_version)
 plt.subplot(211)
-plt.plot(losses, '-b', label='Loss')
+plt.plot(iter_steps,losses, '-b', label='Loss')
 plt.title('Loss function')
 plt.subplot(212)
-plt.plot(accuracies, '-r', label='Acc')
+plt.plot(iter_steps,accuracies, '-r', label='Acc')
 plt.title('Accuracy')
-plt.savefig('loss_acc_plot.png')   
+plt.savefig(trainning_version)   
  
