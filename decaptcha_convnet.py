@@ -26,8 +26,7 @@ X = (Xdata-x_mean)/(x_std+0.00001)
 # Parameters
 learning_rate = 0.001
 batch_size = 64
-<<<<<<< HEAD
-training_iters =200 # 128*5000
+training_iters =2000 # 128*5000
 display_step = 100
 
 # Network Parameters
@@ -283,13 +282,7 @@ with tf.Session() as sess:
     test_X = X[random_idx,:]
     test_Y = Y[random_idx,:]
     # Calculate accuracy 
-    print("Testing Accuracy:", sess.run(accuracy, feed_dict={x: test_X, y: test_Y, keep_prob: 1.}))
-    test_size = min(100, X.shape[0])
-    random_idx = np.random.choice(X.shape[0],test_size, replace=False)
-    test_X = X[random_idx,:]
-    test_Y = Y[random_idx,:]
-    # Calculate accuracy 
-    print("Testing Accuracy:", sess.run(accuracy, feed_dict={x: test_X, y: test_Y, keep_prob: 1.}))
+    print("Testing Accuracy:{}".format(sess.run(accuracy, feed_dict={x: test_X, y: test_Y, keep_prob: 1.}) ) )
     
     
     pp = sess.run(pred, feed_dict={x: test_X, y: test_Y, keep_prob: 1.})
@@ -322,13 +315,24 @@ iter_steps = [ display_step*k for k in range((training_iters/display_step)+1)]
 
 trainning_version = 'captcha_acc_init_const_{}.png'.format(alpha)
 
+
+
 imh =plt.figure(1)
+#imh.tight_layout() 
+#imh.subplots_adjust(top=0.88)
+
 imh.suptitle(trainning_version)
 plt.subplot(211)
-plt.plot(iter_steps,losses, '-b', label='Loss')
+plt.plot(iter_steps,losses, '-g', label='Loss')
+#plt.semilogy(losses, '-g', label='Loss')
 plt.title('Loss function')
 plt.subplot(212)
 plt.plot(iter_steps,accuracies, '-r', label='Acc')
 plt.title('Accuracy')
+plt.tight_layout()
+plt.subplots_adjust(top=0.88)
+plt.show()
+
+
 plt.savefig(trainning_version)   
  
