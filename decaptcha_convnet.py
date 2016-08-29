@@ -26,6 +26,7 @@ X = (Xdata-x_mean)/(x_std+0.00001)
 # Parameters
 learning_rate = 0.001
 batch_size = 64
+<<<<<<< HEAD
 training_iters =200 # 128*5000
 display_step = 100
 
