@@ -10,7 +10,7 @@ import vec_mappings as vecmp
 
 
 #Xdata, Y, captcha_text = vecmp.load_dataset(folder='/home/ksopyla/dev/data/captcha_img/')
-Xdata, Y, captcha_text = vecmp.load_dataset()
+Xdata, Y, captcha_text = vecmp.load_dataset(folder='/shared/Captcha/Captcha/img/')
 
 # invert and normalize to [0,1]
 #X =  (255- Xdata)/255.0
@@ -26,7 +26,7 @@ X = (Xdata-x_mean)/(x_std+0.00001)
 # Parameters
 learning_rate = 0.001
 batch_size = 64
-training_iters =2000 # 128*5000
+training_iters =25000 # 128*5000
 display_step = 100
 
 # Network Parameters
@@ -103,12 +103,12 @@ init_wc3 = np.sqrt(2.0/(3*3*64))
 init_wd1 = np.sqrt(2.0/(8*38*64))
 init_out = np.sqrt(2.0/1024)
 
-alpha=0.01
-init_wc1 = alpha
-init_wc2 = alpha
-init_wc3 = alpha
-init_wd1 = alpha
-init_out =  alpha
+alpha='sqrt_HE'
+#init_wc1 = alpha
+#init_wc2 = alpha
+#init_wc3 = alpha
+#init_wd1 = alpha
+#init_out =  alpha
 
 
 weights = {
@@ -268,9 +268,10 @@ with tf.Session() as sess:
         
         step += 1
         
-        # if step%10000==0:
-        #     print('saving...')
-        #     save_path = saver.save(sess, "./model_sigmoid.ckpt")
+        if step%5000==0:
+            print('saving...')
+            save_file = './models/model_init_{}.ckpt'.format(alpha)
+            save_path = saver.save(sess, save_file)
         
         
     end_epoch = dt.datetime.now()
@@ -304,35 +305,30 @@ with tf.Session() as sess:
         print("true : {}, predicted {} {}".format(true_word, predicted_word,got_error))        
     
     
-    
-    
-    
 
 import matplotlib.pyplot as plt
 
 #iters_steps
 iter_steps = [ display_step*k for k in range((training_iters/display_step)+1)]
 
-trainning_version = 'captcha_acc_init_const_{}.png'.format(alpha)
+trainning_version = './plots/captcha_acc_4l_init_{}.png'.format(alpha)
 
 
 
-imh =plt.figure(1)
+imh =plt.figure(1,figsize=(15,8),dpi=160)
 #imh.tight_layout() 
 #imh.subplots_adjust(top=0.88)
 
 imh.suptitle(trainning_version)
 plt.subplot(211)
-plt.plot(iter_steps,losses, '-g', label='Loss')
-#plt.semilogy(losses, '-g', label='Loss')
+#plt.plot(iter_steps,losses, '-g', label='Loss')
+plt.semilogy(iter_steps,losses, '-g', label='Loss')
 plt.title('Loss function')
 plt.subplot(212)
 plt.plot(iter_steps,accuracies, '-r', label='Acc')
 plt.title('Accuracy')
 plt.tight_layout()
 plt.subplots_adjust(top=0.88)
-plt.show()
-
 
 plt.savefig(trainning_version)   
  
