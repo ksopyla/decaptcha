@@ -8,9 +8,10 @@ import datetime as dt
 import numpy as np
 import vec_mappings as vecmp
 
+print('test')
 
-#Xdata, Y, captcha_text = vecmp.load_dataset(folder='/home/ksopyla/dev/data/captcha_img/')
-Xdata, Y, captcha_text = vecmp.load_dataset()
+Xdata, Y, captcha_text = vecmp.load_dataset(folder='/home/ksopyla/dev/captcha_data/data_07_2016/')
+#Xdata, Y, captcha_text = vecmp.load_dataset()
 
 # invert and normalize to [0,1]
 #X =  (255- Xdata)/255.0
@@ -19,19 +20,19 @@ Xdata, Y, captcha_text = vecmp.load_dataset()
 # standarization 
 #compute mean across the rows, sum elements from each column and divide
 x_mean = Xdata.mean(axis=0)
-x_std  = Xdata.std(axis=0)
+x_std = Xdata.std(axis=0)
 X = (Xdata-x_mean)/(x_std+0.00001)
 
 
 # Parameters
 learning_rate = 0.001
 batch_size = 64
-training_iters =2000 # 128*5000
+training_iters = 2000 # 128*5000
 display_step = 100
 
 # Network Parameters
 img_h = 64
-img_w =304
+img_w = 304
 n_input = img_h*img_w # captcha images has 64x304 size
 n_classes = 20*63 # each word is encoded by 1260 vector
 dropout = 0.75 # Dropout, probability to keep units
@@ -43,7 +44,7 @@ keep_prob = tf.placeholder(tf.float32) #dropout (keep probability)
 
 # Create model
 def conv2d(img, w, b):
-    return tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(img, w, strides=[1, 1, 1, 1], padding='SAME'),b))
+    return tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(img, w, strides=[1, 1, 1, 1], padding='SAME'), b))
 
 def max_pool(img, k):
     return tf.nn.max_pool(img, ksize=[1, k, k, 1], strides=[1, k, k, 1], padding='SAME')
@@ -201,8 +202,7 @@ accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 #accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
 # Initializing the variables
-init = tf.initialize_all_variables()
-
+init = tf.global_variables_initializer()
 
 losses = list()
 accuracies = list()
@@ -228,16 +228,16 @@ with tf.Session() as sess:
         
         sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys, keep_prob: dropout})
         end_op = dt.datetime.now()
-        print("#{} opt step {} {} takes {}".format(step,start_op,end_op, end_op-start_op))
+        #print("#{} opt step {} {} takes {}".format(step,start_op,end_op, end_op-start_op))
         
         if step % display_step == 0:
             
-            print("acc start {}".format(dt.datetime.now()))
+            #print("acc start {}".format(dt.datetime.now()))
             # Calculate batch accuracy
             acc = sess.run(accuracy, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 1.})
             accuracies.append(acc)
             
-            print("loss start {}".format(dt.datetime.now()))
+            #print("loss start {}".format(dt.datetime.now()))
             # Calculate batch loss
             batch_loss = sess.run(loss, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 1.})
             losses.append(batch_loss)
@@ -268,9 +268,10 @@ with tf.Session() as sess:
         
         step += 1
         
-        # if step%10000==0:
-        #     print('saving...')
-        #     save_path = saver.save(sess, "./model_sigmoid.ckpt")
+        if step%5000==0:
+            print('saving...')
+            save_file = './models/model_init_{}.ckpt'.format(alpha)
+            save_path = saver.save(sess, save_file)
         
         
     end_epoch = dt.datetime.now()
