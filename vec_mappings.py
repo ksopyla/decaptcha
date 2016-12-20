@@ -3,9 +3,7 @@ import os
 from scipy.misc import imread
 
 
-def load_dataset(folder="./shared/Captcha/img/", max_files=float('inf')):
-    
-    #folder="./shared/Captcha/img/"
+def load_dataset(folder="./img", max_files=float('inf')):
     
     file_list = os.listdir(folder)
     
