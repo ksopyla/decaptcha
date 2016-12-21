@@ -6,12 +6,15 @@ Author: ksopyla (krzysztofsopyla@gmail.com)
 import tensorflow as tf
 import datetime as dt
 import numpy as np
+import matplotlib.pyplot as plt
 import vec_mappings as vecmp
 
 img_folder = '/home/ksopyla/dev/captcha_data/data_07_2016/'
 #img_folder = '/shared/Captcha/Captcha/img/'
 
 Xdata, Y, captcha_text = vecmp.load_dataset(folder=img_folder)
+
+ds_name = 'data_07_2016'
 
 # invert and normalize to [0,1]
 #X =  (255- Xdata)/255.0
@@ -20,8 +23,16 @@ Xdata, Y, captcha_text = vecmp.load_dataset(folder=img_folder)
 # compute mean across the rows, sum elements from each column and divide
 x_mean = Xdata.mean(axis=0)
 x_std = Xdata.std(axis=0)
-X = (Xdata - x_mean) / (x_std + 0.00001)
+Xdata = (Xdata - x_mean) / (x_std + 0.00001)
 
+test_size = min(3000, Xdata.shape[0])
+random_idx = np.random.choice(Xdata.shape[0], test_size, replace=False)
+
+test_X = Xdata[random_idx, :]
+test_Y = Y[random_idx, :]
+
+X = np.delete(Xdata, random_idx, axis=0)
+Y = np.delete(Y, random_idx, axis=0)
 
 # Parameters
 learning_rate = 0.001
@@ -276,10 +287,6 @@ with tf.Session() as sess:
     print("Optimization Finished, end={} duration={}".format(
         end_epoch, end_epoch - start_epoch))
 
-    test_size = min(100, X.shape[0])
-    random_idx = np.random.choice(X.shape[0], test_size, replace=False)
-    test_X = X[random_idx, :]
-    test_Y = Y[random_idx, :]
     # Calculate accuracy
     print("Testing Accuracy:{}".format(
         sess.run(accuracy, feed_dict={x: test_X, y: test_Y, keep_prob: 1.})))
@@ -304,13 +311,13 @@ with tf.Session() as sess:
             true_word, predicted_word, got_error))
 
 
-import matplotlib.pyplot as plt
+
 
 # iters_steps
 iter_steps = [display_step *
               k for k in range((training_iters / display_step) + 1)]
 
-trainning_version = './plots/captcha_acc_4l_init_{}.png'.format(alpha)
+trainning_version = './plots/captcha_{}_acc_4l_init_{}.png'.format(ds_name,alpha)
 
 
 imh = plt.figure(1, figsize=(15, 8), dpi=160)
