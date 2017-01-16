@@ -130,7 +130,7 @@ def map_char2pos(c):
     return k    
     
     
-def map_words2vec(words):
+def map_words2vec(word):
     """
     Maps word of max 20 characters to vector, each character could be
     '0...9A...Za...z_'
@@ -168,14 +168,14 @@ def map_words2vec(words):
     
     """
     
-    word_len = len(words)
+    word_len = len(word)
     
     vector = np.zeros(20*63)
     
-    if len(words)>20:
-        raise ValueError('word should have length less than 20')
+    if word_len>20:
+        raise ValueError('Word={} has length={}, words should have length less than 20'.format(word, word_len))
     
-    for i, c in enumerate(words):
+    for i, c in enumerate(word):
         idx=i*63+map_char2pos(c)
         
         vector[idx]=1

@@ -9,10 +9,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import vec_mappings as vecmp
 
-img_folder = '/home/ksopyla/dev/captcha_data/data_07_2016/'
-#img_folder = '/shared/Captcha/Captcha/img/'
+#img_folder = '/home/ksopyla/dev/captcha_data/data_07_2016/'
+img_folder = './shared/Captcha/data_07_2016/img/'
 
-Xdata, Y, captcha_text = vecmp.load_dataset(folder=img_folder)
+X, Y, captcha_text = vecmp.load_dataset(folder=img_folder)
 
 ds_name = 'data_07_2016'
 
@@ -21,24 +21,25 @@ ds_name = 'data_07_2016'
 
 # standarization
 # compute mean across the rows, sum elements from each column and divide
-x_mean = Xdata.mean(axis=0)
-x_std = Xdata.std(axis=0)
-Xdata = (Xdata - x_mean) / (x_std + 0.00001)
+x_mean = X.mean(axis=0)
+x_std = X.std(axis=0)
+X = (X - x_mean) / (x_std + 0.00001)
 
-test_size = min(3000, Xdata.shape[0])
-random_idx = np.random.choice(Xdata.shape[0], test_size, replace=False)
+test_size = min(1000, X.shape[0])
+random_idx = np.random.choice(X.shape[0], test_size, replace=False)
 
-test_X = Xdata[random_idx, :]
+test_X = X[random_idx, :]
 test_Y = Y[random_idx, :]
 
-X = np.delete(Xdata, random_idx, axis=0)
+X = np.delete(X, random_idx, axis=0)
 Y = np.delete(Y, random_idx, axis=0)
+
 
 # Parameters
 learning_rate = 0.001
 batch_size = 64
-training_iters = 25000  # 128*5000
-display_step = 100
+training_iters = 25000  # 15000 is ok
+display_step = 1000
 
 # Network Parameters
 img_h = 64
@@ -215,7 +216,8 @@ accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 init = tf.global_variables_initializer()
 
 losses = list()
-accuracies = list()
+train_acc = list()
+test_acc = list()
 
 saver = tf.train.Saver()
 
@@ -237,37 +239,44 @@ with tf.Session() as sess:
         sess.run(optimizer, feed_dict={
                  x: batch_xs, y: batch_ys, keep_prob: dropout})
         end_op = dt.datetime.now()
-        # print("#{} opt step {} {} takes {}".format(step,start_op,end_op,
-        # end_op-start_op))
+        print("#{} opt step {} {} takes {}".format(step,start_op,end_op, end_op-start_op))
 
         if step % display_step == 0:
 
             #print("acc start {}".format(dt.datetime.now()))
-            # Calculate batch accuracy
-            acc = sess.run(accuracy, feed_dict={
-                           x: batch_xs, y: batch_ys, keep_prob: 1.})
-            accuracies.append(acc)
+            # Calculate accuracy on random training samples
+            batch_trainX, batch_trainY, idx = vecmp.random_batch(X, Y, 500)
+            
+            trn_acc = sess.run(accuracy, feed_dict={
+                           x: batch_trainX, y: batch_trainY, keep_prob: 1.})
+            train_acc.append(trn_acc)
 
             #print("loss start {}".format(dt.datetime.now()))
             # Calculate batch loss
             batch_loss = sess.run(
-                loss, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 1.})
+                loss, feed_dict={x: batch_trainX, y: batch_trainY, keep_prob: 1.})
             losses.append(batch_loss)
+            
+            # Calculate accuracy on random test batch 
+            batch_testX, batch_testY, idx = vecmp.random_batch(test_X, test_Y, 500)
+            
+            tst_acc = sess.run(accuracy, feed_dict={
+                           x: batch_testX, y: batch_testY, keep_prob: 1.})
+            test_acc.append(tst_acc)
 
-            print("##Iter " + str(step) + ", Minibatch Loss= " +
-                  "{}".format(batch_loss) + ", Training Accuracy= " + "{}".format(acc))
+            print("##Iter {}, Minibatch Loss={}, Train Acc={} Test Acc={}".format(step, batch_loss,trn_acc,tst_acc))
 
             batch_idx = 0
             k = idx[batch_idx]
 
             pp = sess.run(pred, feed_dict={
-                          x: batch_xs, y: batch_ys, keep_prob: 1.})
-            p = tf.reshape(pp, [batch_size, 20, 63])
+                          x: batch_trainX, y: batch_trainY, keep_prob: 1.})
+            p = tf.reshape(pp, [-1, 20, 63])
             max_idx_p = tf.argmax(p, 2).eval()
 
             predicted_word = vecmp.map_vec_pos2words(max_idx_p[batch_idx, :])
 
-            l = tf.reshape(batch_ys, [batch_size, 20, 63])
+            l = tf.reshape(batch_trainY, [-1, 20, 63])
             # max idx acros the rows
             max_idx_l = tf.argmax(l, 2).eval()
             true_word = vecmp.map_vec_pos2words(max_idx_l[batch_idx, :])
@@ -280,7 +289,7 @@ with tf.Session() as sess:
 
         if step % 5000 == 0:
             print('saving...')
-            save_file = './models/model_init_{}.ckpt'.format(alpha)
+            save_file = './models/model_{}_init_{}.ckpt'.format(ds_name,alpha)
             save_path = saver.save(sess, save_file)
 
     end_epoch = dt.datetime.now()
@@ -320,18 +329,24 @@ iter_steps = [display_step *
 trainning_version = './plots/captcha_{}_acc_4l_init_{}.png'.format(ds_name,alpha)
 
 
-imh = plt.figure(1, figsize=(15, 8), dpi=160)
+imh = plt.figure(1, figsize=(15, 12), dpi=160)
 # imh.tight_layout()
 # imh.subplots_adjust(top=0.88)
 
 imh.suptitle(trainning_version)
-plt.subplot(211)
+plt.subplot(311)
 #plt.plot(iter_steps,losses, '-g', label='Loss')
 plt.semilogy(iter_steps, losses, '-g', label='Loss')
 plt.title('Loss function')
-plt.subplot(212)
-plt.plot(iter_steps, accuracies, '-r', label='Acc')
-plt.title('Accuracy')
+plt.subplot(312)
+plt.plot(iter_steps, train_acc, '-r', label='Trn Acc')
+plt.title('Train Accuracy')
+
+plt.subplot(313)
+plt.plot(iter_steps, test_acc, '-r', label='Tst Acc')
+plt.title('Test Accuracy')
+
+
 plt.tight_layout()
 plt.subplots_adjust(top=0.88)
 
