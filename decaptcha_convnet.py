@@ -38,7 +38,7 @@ Y = np.delete(Y, random_idx, axis=0)
 # Parameters
 learning_rate = 0.001
 batch_size = 64
-training_iters = 25000  # 15000 is ok
+training_iters = 200  # 15000 is ok
 display_step = 100
 
 # Network Parameters
