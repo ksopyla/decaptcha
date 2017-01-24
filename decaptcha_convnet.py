@@ -297,42 +297,38 @@ with tf.Session() as sess:
         end_epoch, end_epoch - start_epoch))
 
     # Calculate accuracy
-
+    print("\n\nStart testing...")
     parts = 10
     test_batch_sz= test_size/parts
     i=0
     k=0
     acc=0.0
     for part in range(parts):
-        
-        i=k
-	k=i+test_batch_sz
+        i = k
+        k = i+test_batch_sz
         batch_test_X= test_X[i:k]
         batch_test_Y = test_Y[i:k]
-        acc+= sess.run(accuracy, feed_dict={x: batch_test_X, y: batch_test_Y, keep_prob: 1.})
+        batch_acc= sess.run(accuracy, feed_dict={x: batch_test_X, y: batch_test_Y, keep_prob: 1.})
+        acc+=batch_acc
 
-	
+        print("Batch #{} accuracy= {}, predictions:".format(part,batch_acc))
+        pp = sess.run(pred, feed_dict={x: batch_test_X, y: batch_test_Y, keep_prob: 1.})
+        p = tf.reshape(pp, [-1, 20, 63])
+        max_idx_p = tf.argmax(p, 2).eval()
+        l = tf.reshape(test_Y, [-1, 20, 63])
+        # max idx acros the rows
+        max_idx_l = tf.argmax(l, 2).eval()
 
+        for k in range(test_batch_sz):
 
-    pp = sess.run(pred, feed_dict={x: test_X, y: test_Y, keep_prob: 1.})
-    p = tf.reshape(pp, [-1, 20, 63])
-    max_idx_p = tf.argmax(p, 2).eval()
-    l = tf.reshape(test_Y, [-1, 20, 63])
-    # max idx acros the rows
-    max_idx_l = tf.argmax(l, 2).eval()
+            true_word = vecmp.map_vec_pos2words(max_idx_l[k, :])
+            predicted_word = vecmp.map_vec_pos2words(max_idx_p[k, :])
 
-    for k in range(test_size):
-
-        true_word = vecmp.map_vec_pos2words(max_idx_l[k, :])
-
-        predicted_word = vecmp.map_vec_pos2words(max_idx_p[k, :])
-
-        got_error = ''
-        if(true_word != predicted_word):
-            got_error = '<--- error'
-        print("true : {}, predicted {} {}".format(
-            true_word, predicted_word, got_error))
-
+            got_error = ''
+            if(true_word != predicted_word):
+                got_error = '<--- error'
+            print("true : {}, predicted {} {}".format(
+                true_word, predicted_word, got_error))
     
     acc= acc/parts
     print("Testing Accuracy:{}".format(acc))
