@@ -9,8 +9,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import vec_mappings as vecmp
 
-#img_folder = '/home/ksopyla/dev/captcha_data/data_07_2016/'
-img_folder = './shared/Captcha/data_07_2016/img/'
+img_folder = '/home/ksopyla/dev/data/data_07_2016/'
+#img_folder = './shared/Captcha/data_07_2016/img/'
 
 X, Y, captcha_text = vecmp.load_dataset(folder=img_folder)
 
@@ -39,7 +39,7 @@ Y = np.delete(Y, random_idx, axis=0)
 learning_rate = 0.001
 batch_size = 64
 training_iters = 25000  # 15000 is ok
-display_step = 1000
+display_step = 100
 
 # Network Parameters
 img_h = 64
@@ -239,13 +239,13 @@ with tf.Session() as sess:
         sess.run(optimizer, feed_dict={
                  x: batch_xs, y: batch_ys, keep_prob: dropout})
         end_op = dt.datetime.now()
-        print("#{} opt step {} {} takes {}".format(step,start_op,end_op, end_op-start_op))
+        #print("#{} opt step {} {} takes {}".format(step,start_op,end_op, end_op-start_op))
 
         if step % display_step == 0:
 
             #print("acc start {}".format(dt.datetime.now()))
             # Calculate accuracy on random training samples
-            batch_trainX, batch_trainY, idx = vecmp.random_batch(X, Y, 500)
+            batch_trainX, batch_trainY, idx = vecmp.random_batch(X, Y,100)
             
             trn_acc = sess.run(accuracy, feed_dict={
                            x: batch_trainX, y: batch_trainY, keep_prob: 1.})
@@ -258,7 +258,7 @@ with tf.Session() as sess:
             losses.append(batch_loss)
             
             # Calculate accuracy on random test batch 
-            batch_testX, batch_testY, idx = vecmp.random_batch(test_X, test_Y, 500)
+            batch_testX, batch_testY, idx = vecmp.random_batch(test_X, test_Y, 100)
             
             tst_acc = sess.run(accuracy, feed_dict={
                            x: batch_testX, y: batch_testY, keep_prob: 1.})
@@ -297,8 +297,22 @@ with tf.Session() as sess:
         end_epoch, end_epoch - start_epoch))
 
     # Calculate accuracy
-    print("Testing Accuracy:{}".format(
-        sess.run(accuracy, feed_dict={x: test_X, y: test_Y, keep_prob: 1.})))
+
+    parts = 10
+    test_batch_sz= test_size/parts
+    i=0
+    k=0
+    acc=0.0
+    for part in range(parts):
+        
+        i=k
+	k=i+test_batch_sz
+        batch_test_X= test_X[i:k]
+        batch_test_Y = test_Y[i:k]
+        acc+= sess.run(accuracy, feed_dict={x: batch_test_X, y: batch_test_Y, keep_prob: 1.})
+
+	
+
 
     pp = sess.run(pred, feed_dict={x: test_X, y: test_Y, keep_prob: 1.})
     p = tf.reshape(pp, [-1, 20, 63])
@@ -319,7 +333,9 @@ with tf.Session() as sess:
         print("true : {}, predicted {} {}".format(
             true_word, predicted_word, got_error))
 
-
+    
+    acc= acc/parts
+    print("Testing Accuracy:{}".format(acc))
 
 
 # iters_steps
