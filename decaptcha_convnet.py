@@ -299,7 +299,7 @@ with tf.Session() as sess:
     # Calculate accuracy
     print("\n\nStart testing...")
     parts = 10
-    test_batch_sz= test_size/parts
+    test_batch_sz= int(test_size/parts)
     i=0
     k=0
     acc=0.0
