@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import vec_mappings as vecmp
 
-#img_folder = '/home/ksopyla/dev/captcha_data/data_07_2016/'
+#img_folder = '/home/ksopyla/dev/data/data_07_2016/'
 img_folder = './shared/Captcha/data_07_2016/img/'
 
 X, Y, captcha_text = vecmp.load_dataset(folder=img_folder)
@@ -38,8 +38,8 @@ Y = np.delete(Y, random_idx, axis=0)
 # Parameters
 learning_rate = 0.001
 batch_size = 64
-training_iters = 35000  # 15000 is ok
-display_step = 1000
+training_iters = 200  # 15000 is ok
+display_step = 100
 
 # Network Parameters
 img_h = 64
@@ -245,7 +245,7 @@ with tf.Session() as sess:
 
             #print("acc start {}".format(dt.datetime.now()))
             # Calculate accuracy on random training samples
-            batch_trainX, batch_trainY, idx = vecmp.random_batch(X, Y, 500)
+            batch_trainX, batch_trainY, idx = vecmp.random_batch(X, Y,100)
             
             trn_acc = sess.run(accuracy, feed_dict={
                            x: batch_trainX, y: batch_trainY, keep_prob: 1.})
@@ -258,7 +258,7 @@ with tf.Session() as sess:
             losses.append(batch_loss)
             
             # Calculate accuracy on random test batch 
-            batch_testX, batch_testY, idx = vecmp.random_batch(test_X, test_Y, 500)
+            batch_testX, batch_testY, idx = vecmp.random_batch(test_X, test_Y, 100)
             
             tst_acc = sess.run(accuracy, feed_dict={
                            x: batch_testX, y: batch_testY, keep_prob: 1.})
@@ -297,34 +297,46 @@ with tf.Session() as sess:
         end_epoch, end_epoch - start_epoch))
 
     # Calculate accuracy
-    print("Testing Accuracy:{}".format(
-        sess.run(accuracy, feed_dict={x: test_X, y: test_Y, keep_prob: 1.})))
+    print("\n\nStart testing...")
+    parts = 10
+    test_batch_sz= test_size//parts
+    i=0
+    k=0
+    acc=0.0
+    for part in range(parts):
+        i = k
+        k = i+test_batch_sz
+        batch_test_X= test_X[i:k]
+        batch_test_Y = test_Y[i:k]
+        batch_acc= sess.run(accuracy, feed_dict={x: batch_test_X, y: batch_test_Y, keep_prob: 1.})
+        acc+=batch_acc
 
-    pp = sess.run(pred, feed_dict={x: test_X, y: test_Y, keep_prob: 1.})
-    p = tf.reshape(pp, [-1, 20, 63])
-    max_idx_p = tf.argmax(p, 2).eval()
-    l = tf.reshape(test_Y, [-1, 20, 63])
-    # max idx acros the rows
-    max_idx_l = tf.argmax(l, 2).eval()
+        print("Batch #{} accuracy= {}, predictions:".format(part,batch_acc))
+        pp = sess.run(pred, feed_dict={x: batch_test_X, y: batch_test_Y, keep_prob: 1.})
+        p = tf.reshape(pp, [-1, 20, 63])
+        max_idx_p = tf.argmax(p, 2).eval()
+        l = tf.reshape(test_Y, [-1, 20, 63])
+        # max idx acros the rows
+        max_idx_l = tf.argmax(l, 2).eval()
 
-    for k in range(test_size):
+        for k in range(test_batch_sz):
 
-        true_word = vecmp.map_vec_pos2words(max_idx_l[k, :])
+            true_word = vecmp.map_vec_pos2words(max_idx_l[k, :])
+            predicted_word = vecmp.map_vec_pos2words(max_idx_p[k, :])
 
-        predicted_word = vecmp.map_vec_pos2words(max_idx_p[k, :])
-
-        got_error = ''
-        if(true_word != predicted_word):
-            got_error = '<--- error'
-        print("true : {}, predicted {} {}".format(
-            true_word, predicted_word, got_error))
-
-
+            got_error = ''
+            if(true_word != predicted_word):
+                got_error = '<--- error'
+            print("true : {}, predicted {} {}".format(
+                true_word, predicted_word, got_error))
+    
+    acc= acc/parts
+    print("Testing Accuracy:{}".format(acc))
 
 
 # iters_steps
 iter_steps = [display_step *
-              k for k in range((training_iters / display_step) + 1)]
+              k for k in range((training_iters // display_step) + 1)]
 
 trainning_version = './plots/captcha_{}_acc_4l_init_{}_iter_{}.png'.format(ds_name,alpha,training_iters)
 
