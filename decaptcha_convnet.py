@@ -68,25 +68,25 @@ def conv_net(_X, _weights, _biases, _dropout):
     # Reshape input picture
     _X = tf.reshape(_X, shape=[-1, img_h, img_w, 1])
 
-    # Convolution Layer 5x5x32 first, layer with relu
+    # Convolution Layer 3x3x32 first, layer with relu
     conv1 = conv2d(_X, _weights['wc1'], _biases['bc1'])
     # Convolution Layer 3x3x32, second layer with relu
-    #conv1 = conv2d(conv1, _weights['wc11'], _biases['bc11'])
+    conv1 = conv2d(conv1, _weights['wc11'], _biases['bc11'])
     # Max Pooling (down-sampling), change input size by factor of 2
     conv1 = max_pool(conv1, k=2)
     # Apply Dropout
     conv1 = tf.nn.dropout(conv1, _dropout)
 
-    # Convolution Layer, 5x5x64
+    # Convolution Layer, 3x3x64
     conv2 = conv2d(conv1, _weights['wc2'], _biases['bc2'])
     # Convolution Layer, 3x3x64
-    #conv2 = conv2d(conv2, _weights['wc22'], _biases['bc22'])
+    conv2 = conv2d(conv2, _weights['wc21'], _biases['bc21'])
     # Max Pooling (down-sampling)
     conv2 = max_pool(conv2, k=2)
     # Apply Dropout
     conv2 = tf.nn.dropout(conv2, _dropout)
 
-    # Convolution Layer, 5x5x64
+    # Convolution Layer, 3x3x64
     conv3 = conv2d(conv2, _weights['wc3'], _biases['bc3'])
     # Max Pooling (down-sampling)
     conv3 = max_pool(conv3, k=2)
@@ -110,7 +110,9 @@ def conv_net(_X, _weights, _biases, _dropout):
 
 # relu initialization
 init_wc1 = np.sqrt(2.0 / (img_w * img_h))
+init_wc11 = np.sqrt(2.0 / (3 * 3 * 32))
 init_wc2 = np.sqrt(2.0 / (3 * 3 * 32))
+init_wc21 = np.sqrt(2.0 / (3 * 3 * 64))
 init_wc3 = np.sqrt(2.0 / (3 * 3 * 64))
 init_wd1 = np.sqrt(2.0 / (8 * 38 * 64))
 init_out = np.sqrt(2.0 / 1024)
@@ -126,10 +128,10 @@ alpha = 'sqrt_HE'
 weights = {
     # 3x3 conv, 1 input, 32 outputs
     'wc1': tf.Variable(init_wc1 * tf.random_normal([3, 3, 1, 32])),
-    #'wc11': tf.Variable(alpha*tf.random_normal([3, 3, 32, 32])), # 3x3 conv, 32 input, 32 outputs
+    'wc11': tf.Variable( init_wc11*tf.random_normal([3, 3, 32, 32])), # 3x3 conv, 32 input, 32 outputs
     # 3x3 conv, 32 inputs, 64 outputs
     'wc2': tf.Variable(init_wc2 * tf.random_normal([3, 3, 32, 64])),
-    #'wc22': tf.Variable(alpha*tf.random_normal([3, 3, 64, 64])), # 3x3 conv, 32 inputs, 64 outputs
+    'wc21': tf.Variable(init_wc21*tf.random_normal([3, 3, 64, 64])), # 3x3 conv, 32 inputs, 64 outputs
     # 3x3 conv, 64 inputs, 64 outputs
     'wc3': tf.Variable(init_wc3 * tf.random_normal([3, 3, 64, 64])),
     # fully connected, 64/(2*2*2)=8, 304/(2*2*2)=38 (three max pool k=2)
@@ -142,9 +144,9 @@ weights = {
 
 biases = {
     'bc1': tf.Variable(0.1 * tf.random_normal([32])),
-    #'bc11': tf.Variable(tf.random_normal([32])),
+    'bc11': tf.Variable(0.1* tf.random_normal([32])),
     'bc2': tf.Variable(0.1 * tf.random_normal([64])),
-    #'bc22': tf.Variable(tf.random_normal([64])),
+    'bc21': tf.Variable(0.1*tf.random_normal([64])),
     'bc3': tf.Variable(0.1 * tf.random_normal([64])),
     'bd1': tf.Variable(0.1 * tf.random_normal([1024])),
     'out': tf.Variable(0.1 * tf.random_normal([20 * 63]))
