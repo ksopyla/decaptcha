@@ -38,7 +38,7 @@ Y = np.delete(Y, random_idx, axis=0)
 # Parameters
 learning_rate = 0.001
 batch_size = 64
-training_iters = 25000  # 15000 is ok
+training_iters = 35000  # 15000 is ok
 display_step = 1000
 
 # Network Parameters
@@ -239,7 +239,7 @@ with tf.Session() as sess:
         sess.run(optimizer, feed_dict={
                  x: batch_xs, y: batch_ys, keep_prob: dropout})
         end_op = dt.datetime.now()
-        print("#{} opt step {} {} takes {}".format(step,start_op,end_op, end_op-start_op))
+        #print("#{} opt step {} {} takes {}".format(step,start_op,end_op, end_op-start_op))
 
         if step % display_step == 0:
 
@@ -326,7 +326,7 @@ with tf.Session() as sess:
 iter_steps = [display_step *
               k for k in range((training_iters / display_step) + 1)]
 
-trainning_version = './plots/captcha_{}_acc_4l_init_{}.png'.format(ds_name,alpha)
+trainning_version = './plots/captcha_{}_acc_4l_init_{}_iter_{}.png'.format(ds_name,alpha,training_iters)
 
 
 imh = plt.figure(1, figsize=(15, 12), dpi=160)
