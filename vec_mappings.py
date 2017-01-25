@@ -39,15 +39,23 @@ def load_dataset(folder="./img", max_files=float('inf')):
             #convert ot gray, faster
             img = np.mean(img,-1)
     
-        else: 
+        
+        im_shape = img.shape
+    
+        if im_shape[0]== 57 and im_shape[1]==300: 
             # each immage has size 57x300, we have to 
             # resize images to 64x304, because conv nets work better with 
             # dimensions divided by 2, we add 4 pixesl at the top
             # 3 pixesl at the bottom and 2 to left and right
             # TODO: change it to more automatic way, what if image size will be 
-            # different than 57x300?
+            # different than 57.300?
             im_pad = np.pad(img,((4,3),(2,2)), 'constant', constant_values=(255,))
+            im_shape = im_pad.shape
+        else:
+            print('\n-->Image={} with different dimensions then 57x300, shape={}, skip it'.format(file,im_shape))
+            continue
             
+        
         
         captchas.append(file)
         # file with padded text with '_', each captach has 20 char lenght
