@@ -9,8 +9,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import vec_mappings as vecmp
 
-#img_folder = '/home/ksopyla/dev/data/data_07_2016/'
-img_folder = './shared/Captcha/data_07_2016/img/'
+img_folder = '/home/ksopyla/dev/data/data_07_2016/'
+#img_folder = './shared/Captcha/data_07_2016/img/'
 
 X, Y, captcha_text = vecmp.load_dataset(folder=img_folder)
 
@@ -38,7 +38,7 @@ Y = np.delete(Y, random_idx, axis=0)
 # Parameters
 learning_rate = 0.001
 batch_size = 64
-training_iters = 200  # 15000 is ok
+training_iters = 50000  # 15000 is ok
 display_step = 100
 
 # Network Parameters
@@ -340,7 +340,7 @@ with tf.Session() as sess:
 iter_steps = [display_step *
               k for k in range((training_iters // display_step) + 1)]
 
-trainning_version = './plots/captcha_{}_acc_4l_init_{}_iter_{}.png'.format(ds_name,alpha,training_iters)
+trainning_version = './plots/captcha_{}_acc_2x2conv_4l_init_{}_iter_{}.png'.format(ds_name,alpha,training_iters)
 
 
 imh = plt.figure(1, figsize=(15, 12), dpi=160)
