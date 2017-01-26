@@ -109,29 +109,34 @@ def conv_net(_X, _weights, _biases, _dropout):
 # Store layers weight & bias
 
 # relu initialization
-init_wc1 = np.sqrt(2.0 / (img_w * img_h))
-init_wc11 = np.sqrt(2.0 / (3 * 3 * 32))
-init_wc2 = np.sqrt(2.0 / (3 * 3 * 32))
-init_wc21 = np.sqrt(2.0 / (3 * 3 * 64))
+init_wc1 = np.sqrt(2.0 / (img_w * img_h)) # ~0.01
+init_wc11 = np.sqrt(2.0 / (3 * 3 * 32)) # ~0.08
+init_wc2 = np.sqrt(2.0 / (3 * 3 * 32)) # ~0.08
+init_wc21 = np.sqrt(2.0 / (3 * 3 * 64)) # ~0.06
 init_wc3 = np.sqrt(2.0 / (3 * 3 * 64))
-init_wd1 = np.sqrt(2.0 / (8 * 38 * 64))
-init_out = np.sqrt(2.0 / 1024)
+init_wd1 = np.sqrt(2.0 / (8 * 38 * 64)) #~0.01
+init_out = np.sqrt(2.0 / 1024) #~0.044
 
-alpha = 'sqrt_HE'
-#init_wc1 = alpha
-#init_wc2 = alpha
-#init_wc3 = alpha
-#init_wd1 = alpha
-#init_out =  alpha
+#alpha = 'sqrt_HE'
+alpha = 0.01
+init_wc1 = alpha
+init_wc11 = alpha
+init_wc2 = alpha
+init_wc21 = alpha
+init_wc3 = alpha
+init_wd1 = alpha
+init_out = alpha
 
 
 weights = {
     # 3x3 conv, 1 input, 32 outputs
     'wc1': tf.Variable(init_wc1 * tf.random_normal([3, 3, 1, 32])),
-    'wc11': tf.Variable( init_wc11*tf.random_normal([3, 3, 32, 32])), # 3x3 conv, 32 input, 32 outputs
+    # 3x3 conv, 32 input, 32 outputs
+    'wc11': tf.Variable(init_wc11*tf.random_normal([3, 3, 32, 32])),
     # 3x3 conv, 32 inputs, 64 outputs
     'wc2': tf.Variable(init_wc2 * tf.random_normal([3, 3, 32, 64])),
-    'wc21': tf.Variable(init_wc21*tf.random_normal([3, 3, 64, 64])), # 3x3 conv, 32 inputs, 64 outputs
+    # 3x3 conv, 32 inputs, 64 outputs
+    'wc21': tf.Variable(init_wc21*tf.random_normal([3, 3, 64, 64])),
     # 3x3 conv, 64 inputs, 64 outputs
     'wc3': tf.Variable(init_wc3 * tf.random_normal([3, 3, 64, 64])),
     # fully connected, 64/(2*2*2)=8, 304/(2*2*2)=38 (three max pool k=2)
@@ -142,14 +147,15 @@ weights = {
     'out': tf.Variable(init_out * tf.random_normal([1024, 20 * 63]))
 }
 
+bias_scale = 0.01
 biases = {
-    'bc1': tf.Variable(0.1 * tf.random_normal([32])),
-    'bc11': tf.Variable(0.1* tf.random_normal([32])),
-    'bc2': tf.Variable(0.1 * tf.random_normal([64])),
-    'bc21': tf.Variable(0.1*tf.random_normal([64])),
-    'bc3': tf.Variable(0.1 * tf.random_normal([64])),
-    'bd1': tf.Variable(0.1 * tf.random_normal([1024])),
-    'out': tf.Variable(0.1 * tf.random_normal([20 * 63]))
+    'bc1':  tf.Variable(bias_scale * tf.random_normal([32])),
+    'bc11': tf.Variable(bias_scale * tf.random_normal([32])),
+    'bc2':  tf.Variable(bias_scale * tf.random_normal([64])),
+    'bc21': tf.Variable(bias_scale * tf.random_normal([64])),
+    'bc3':  tf.Variable(bias_scale * tf.random_normal([64])),
+    'bd1':  tf.Variable(bias_scale * tf.random_normal([1024])),
+    'out':  tf.Variable(bias_scale * tf.random_normal([20 * 63]))
 }
 
 # Construct model
