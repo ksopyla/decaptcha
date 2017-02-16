@@ -3,7 +3,7 @@ A Convolutional Network implementation example using TensorFlow library.
 Author: ksopyla (krzysztofsopyla@gmail.com)
 '''
 
-#import tensorflow as tf
+import tensorflow as tf
 import datetime as dt
 import numpy as np
 import matplotlib.pyplot as plt
