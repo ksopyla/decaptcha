@@ -35,11 +35,11 @@ def prepare_data(img_folder):
     return (X,Y,test_X,test_Y)
 
 
-def save_plots(losses, train_acc, test_acc, training_iters,plot_title):
+def save_plots(losses, train_acc, test_acc, training_iters,step,plot_title):
         
     # iters_steps
-    iter_steps = [display_step *
-                k for k in range((training_iters // display_step) + 1)]
+    iter_steps = [step *
+                k for k in range((training_iters // step) + 1)]
 
     imh = plt.figure(1, figsize=(15, 12), dpi=160)
     # imh.tight_layout()
@@ -442,7 +442,7 @@ def main(learning_r=0.001, drop=0.7,train_iters=20000,):
 
 
         plot_title = './plots/captcha_{}_opt_{}_lr_{}_2x2conv_dropout_{}_6l_init_{}_iter_{}.png'.format(ds_name,opt_alg,learning_rate,dropout,alpha,training_iters)
-        save_plots(losses, train_acc, test_acc, training_iters,plot_title)
+        save_plots(losses, train_acc, test_acc, training_iters,display_step, plot_title)
 
 
 
