@@ -3,7 +3,7 @@ A Convolutional Network implementation example using TensorFlow library.
 Author: ksopyla (krzysztofsopyla@gmail.com)
 '''
 
-import tensorflow as tf
+#import tensorflow as tf
 import datetime as dt
 import numpy as np
 import matplotlib.pyplot as plt
@@ -202,12 +202,14 @@ def build_conv_net(_X, _weights, _biases, _dropout, img_h, img_w):
 def main(learning_r=0.001, drop=0.7,train_iters=20000,):
 
     print('Learning script with params learning_rate={}, dropout={}, iterations={}'.format(learning_r,drop,train_iters))
+    
     img_folder = '/home/ksopyla/dev/data/data_07_2016/'
     #img_folder = '/home/ksirg/dev/data/data_07_2016/'
     #img_folder = './shared/Captcha/data_07_2016/img/'
     ds_name = 'data_07_2016'
 
     X,Y,test_X, test_Y = prepare_data(img_folder)
+    test_size = test_X.shape[0]
 
     # Parameters
     learning_rate = learning_r
