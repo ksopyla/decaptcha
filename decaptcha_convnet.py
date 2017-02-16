@@ -200,6 +200,8 @@ def build_conv_net(_X, _weights, _biases, _dropout, img_h, img_w):
 
 
 def main(learning_r=0.001, drop=0.7,train_iters=20000,):
+
+    print('Learning script with params learning_rate={}, dropout={}, iterations={}'.format(learning_r,drop,train_iters))
     
     img_folder = '/home/ksopyla/dev/data/data_07_2016/'
     img_folder = '/home/ksirg/dev/data/data_07_2016/'
