@@ -202,7 +202,6 @@ def build_conv_net(_X, _weights, _biases, _dropout, img_h, img_w):
 def main(learning_r=0.001, drop=0.7,train_iters=20000,):
 
     print('Learning script with params learning_rate={}, dropout={}, iterations={}'.format(learning_r,drop,train_iters))
-    
     img_folder = '/home/ksopyla/dev/data/data_07_2016/'
     img_folder = '/home/ksirg/dev/data/data_07_2016/'
     #img_folder = './shared/Captcha/data_07_2016/img/'
@@ -452,14 +451,17 @@ if __name__ == "__main__":
     parser.add_option('-d', '--dropout',
                       dest='dropout',
                       default=0.7,
+                      type='float',                      
                       help='dropout')
     parser.add_option('-l', '--learning_rate',
                       dest='learning_rate',
                       default=0.001,
+                      type='float',
                       help='optimizer learning rate')
     parser.add_option('-i', '--training_iters',
                       dest='training_iters',
                       default=20000,
+                      type='int',
                       help='number of training iteration')
 
     parser.add_option('-a', '--activation_func',
