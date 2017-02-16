@@ -38,7 +38,7 @@ Y = np.delete(Y, random_idx, axis=0)
 # Parameters
 learning_rate = 0.001
 batch_size = 64
-training_iters = 50000  # 15000 is ok
+training_iters = 40000  # 15000 is ok
 display_step = 100
 
 # Network Parameters
@@ -46,7 +46,7 @@ img_h = 64
 img_w = 304
 n_input = img_h * img_w  # captcha images has 64x304 size
 n_classes = 20 * 63  # each word is encoded by 1260 vector
-dropout = 0.75  # Dropout, probability to keep units
+dropout = 0.6  # Dropout, probability to keep units
 
 # tf Graph input
 x = tf.placeholder(tf.float32, [None, n_input])
@@ -58,6 +58,7 @@ keep_prob = tf.placeholder(tf.float32)  # dropout (keep probability)
 
 def conv2d(img, w, b):
     return tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(img, w, strides=[1, 1, 1, 1], padding='SAME'), b))
+    #return tf.nn.crelu(tf.nn.bias_add(tf.nn.conv2d(img, w, strides=[1, 1, 1, 1], padding='SAME'), b))
 
 
 def max_pool(img, k):
@@ -118,7 +119,7 @@ init_wd1 = np.sqrt(2.0 / (8 * 38 * 64)) #~0.01
 init_out = np.sqrt(2.0 / 1024) #~0.044
 
 #alpha = 'sqrt_HE'
-alpha = 0.01
+alpha = 0.005
 init_wc1 = alpha
 init_wc11 = alpha
 init_wc2 = alpha
@@ -189,7 +190,7 @@ cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(pred, y)
 loss = tf.reduce_mean(cross_entropy)
 
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
-
+opt_alg = 'adam'
 
 # Evaluate model
 
@@ -346,7 +347,7 @@ with tf.Session() as sess:
 iter_steps = [display_step *
               k for k in range((training_iters // display_step) + 1)]
 
-trainning_version = './plots/captcha_{}_acc_2x2conv_4l_init_{}_iter_{}.png'.format(ds_name,alpha,training_iters)
+trainning_version = './plots/captcha_{}_opt_{}_lr_{}_2x2conv_dropout_{}_6l_init_{}_iter_{}.png'.format(ds_name,opt_alg,learning_rate,dropout,alpha,training_iters)
 
 
 imh = plt.figure(1, figsize=(15, 12), dpi=160)
