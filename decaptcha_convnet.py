@@ -8,64 +8,153 @@ import datetime as dt
 import numpy as np
 import matplotlib.pyplot as plt
 import vec_mappings as vecmp
+import optparse
 
-img_folder = '/home/ksopyla/dev/data/data_07_2016/'
-#img_folder = './shared/Captcha/data_07_2016/img/'
+def prepare_data(img_folder):
+    
+    X, Y, captcha_text = vecmp.load_dataset(folder=img_folder)
 
-X, Y, captcha_text = vecmp.load_dataset(folder=img_folder)
+    # invert and normalize to [0,1]
+    #X =  (255- Xdata)/255.0
 
-ds_name = 'data_07_2016'
+    # standarization
+    # compute mean across the rows, sum elements from each column and divide
+    x_mean = X.mean(axis=0)
+    x_std = X.std(axis=0)
+    X = (X - x_mean) / (x_std + 0.00001)
 
-# invert and normalize to [0,1]
-#X =  (255- Xdata)/255.0
+    test_size = min(1000, X.shape[0])
+    random_idx = np.random.choice(X.shape[0], test_size, replace=False)
 
-# standarization
-# compute mean across the rows, sum elements from each column and divide
-x_mean = X.mean(axis=0)
-x_std = X.std(axis=0)
-X = (X - x_mean) / (x_std + 0.00001)
+    test_X = X[random_idx, :]
+    test_Y = Y[random_idx, :]
 
-test_size = min(1000, X.shape[0])
-random_idx = np.random.choice(X.shape[0], test_size, replace=False)
+    X = np.delete(X, random_idx, axis=0)
+    Y = np.delete(Y, random_idx, axis=0)
 
-test_X = X[random_idx, :]
-test_Y = Y[random_idx, :]
-
-X = np.delete(X, random_idx, axis=0)
-Y = np.delete(Y, random_idx, axis=0)
-
-
-# Parameters
-learning_rate = 0.001
-batch_size = 64
-training_iters = 40000  # 15000 is ok
-display_step = 100
-
-# Network Parameters
-img_h = 64
-img_w = 304
-n_input = img_h * img_w  # captcha images has 64x304 size
-n_classes = 20 * 63  # each word is encoded by 1260 vector
-dropout = 0.6  # Dropout, probability to keep units
-
-# tf Graph input
-x = tf.placeholder(tf.float32, [None, n_input])
-y = tf.placeholder(tf.float32, [None, n_classes])
-keep_prob = tf.placeholder(tf.float32)  # dropout (keep probability)
-
-# Create model
+    return (X,Y,test_X,test_Y)
 
 
-def conv2d(img, w, b):
-    return tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(img, w, strides=[1, 1, 1, 1], padding='SAME'), b))
-    #return tf.nn.crelu(tf.nn.bias_add(tf.nn.conv2d(img, w, strides=[1, 1, 1, 1], padding='SAME'), b))
+def save_plots(losses, train_acc, test_acc, training_iters,plot_title):
+        
+    # iters_steps
+    iter_steps = [display_step *
+                k for k in range((training_iters // display_step) + 1)]
+
+    imh = plt.figure(1, figsize=(15, 12), dpi=160)
+    # imh.tight_layout()
+    # imh.subplots_adjust(top=0.88)
+
+    imh.suptitle(plot_title)
+    plt.subplot(311)
+    #plt.plot(iter_steps,losses, '-g', label='Loss')
+    plt.semilogy(iter_steps, losses, '-g', label='Loss')
+    plt.title('Loss function')
+    plt.subplot(312)
+    plt.plot(iter_steps, train_acc, '-r', label='Trn Acc')
+    plt.title('Train Accuracy')
+
+    plt.subplot(313)
+    plt.plot(iter_steps, test_acc, '-r', label='Tst Acc')
+    plt.title('Test Accuracy')
+
+
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.88)
+
+    plt.savefig(plot_title)
+
+
+def conv2d(img, w, b,acitivation_func='relu'):
+    '''
+    Creates 2d convolution layer with activation and bias
+    img - tensor
+    w - weights
+    b - bias
+    '''    
+
+    if acitivation_func=='elu':
+        return tf.nn.elu(tf.nn.bias_add(tf.nn.conv2d(img, w, strides=[1, 1, 1, 1], padding='SAME'), b))
+    else:
+        return tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(img, w, strides=[1, 1, 1, 1], padding='SAME'), b))
+    
 
 
 def max_pool(img, k):
     return tf.nn.max_pool(img, ksize=[1, k, k, 1], strides=[1, k, k, 1], padding='SAME')
 
 
-def conv_net(_X, _weights, _biases, _dropout):
+def create_weights(img_w, img_h):
+    '''
+    Create weights and do an initialization
+
+    img_h - input image height
+    img_w - input image width
+    '''
+        # Store layers weight & bias
+
+    # relu initialization
+    init_wc1 = np.sqrt(2.0 / (img_w * img_h)) # ~0.01
+    init_wc11 = np.sqrt(2.0 / (3 * 3 * 32)) # ~0.08
+    init_wc2 = np.sqrt(2.0 / (3 * 3 * 32)) # ~0.08
+    init_wc21 = np.sqrt(2.0 / (3 * 3 * 64)) # ~0.06
+    init_wc3 = np.sqrt(2.0 / (3 * 3 * 64))
+    init_wd1 = np.sqrt(2.0 / (8 * 38 * 64)) #~0.01
+    init_out = np.sqrt(2.0 / 1024) #~0.044
+
+    #alpha = 'sqrt_HE'
+    alpha = 0.005
+    init_wc1 = alpha
+    init_wc11 = alpha
+    init_wc2 = alpha
+    init_wc21 = alpha
+    init_wc3 = alpha
+    init_wd1 = alpha
+    init_out = alpha
+
+
+    weights = {
+        # 3x3 conv, 1 input, 32 outputs
+        'wc1': tf.Variable(init_wc1 * tf.random_normal([3, 3, 1, 32])),
+        # 3x3 conv, 32 input, 32 outputs
+        'wc11': tf.Variable(init_wc11*tf.random_normal([3, 3, 32, 32])),
+        # 3x3 conv, 32 inputs, 64 outputs
+        'wc2': tf.Variable(init_wc2 * tf.random_normal([3, 3, 32, 64])),
+        # 3x3 conv, 32 inputs, 64 outputs
+        'wc21': tf.Variable(init_wc21*tf.random_normal([3, 3, 64, 64])),
+        # 3x3 conv, 64 inputs, 64 outputs
+        'wc3': tf.Variable(init_wc3 * tf.random_normal([3, 3, 64, 64])),
+        # fully connected, 64/(2*2*2)=8, 304/(2*2*2)=38 (three max pool k=2)
+        # inputs, 1024 outputs
+        'wd1': tf.Variable(init_wd1 * tf.random_normal([8 * 38 * 64, 1024])),
+        #'out': tf.Variable(alpha*tf.random_normal([1024, n_classes]))
+        # 1024 inputs, 20*63 outputs for one catpcha word (max 20chars)
+        'out': tf.Variable(init_out * tf.random_normal([1024, 20 * 63]))
+    }
+
+    bias_scale = 0.01
+    biases = {
+        'bc1':  tf.Variable(bias_scale * tf.random_normal([32])),
+        'bc11': tf.Variable(bias_scale * tf.random_normal([32])),
+        'bc2':  tf.Variable(bias_scale * tf.random_normal([64])),
+        'bc21': tf.Variable(bias_scale * tf.random_normal([64])),
+        'bc3':  tf.Variable(bias_scale * tf.random_normal([64])),
+        'bd1':  tf.Variable(bias_scale * tf.random_normal([1024])),
+        'out':  tf.Variable(bias_scale * tf.random_normal([20 * 63]))
+    }
+
+    return weights,biases
+
+def build_conv_net(_X, _weights, _biases, _dropout, img_h, img_w):
+    """
+    Creates tensorflow net model, adds layers
+
+    X - tensor data
+    _weights - initailized weights
+
+    img_h - input image height
+    img_w - input image width
+    """
     # Reshape input picture
     _X = tf.reshape(_X, shape=[-1, img_h, img_w, 1])
 
@@ -107,268 +196,280 @@ def conv_net(_X, _weights, _biases, _dropout):
     #out = tf.nn.softmax(out)
     return out
 
-# Store layers weight & bias
-
-# relu initialization
-init_wc1 = np.sqrt(2.0 / (img_w * img_h)) # ~0.01
-init_wc11 = np.sqrt(2.0 / (3 * 3 * 32)) # ~0.08
-init_wc2 = np.sqrt(2.0 / (3 * 3 * 32)) # ~0.08
-init_wc21 = np.sqrt(2.0 / (3 * 3 * 64)) # ~0.06
-init_wc3 = np.sqrt(2.0 / (3 * 3 * 64))
-init_wd1 = np.sqrt(2.0 / (8 * 38 * 64)) #~0.01
-init_out = np.sqrt(2.0 / 1024) #~0.044
-
-#alpha = 'sqrt_HE'
-alpha = 0.005
-init_wc1 = alpha
-init_wc11 = alpha
-init_wc2 = alpha
-init_wc21 = alpha
-init_wc3 = alpha
-init_wd1 = alpha
-init_out = alpha
 
 
-weights = {
-    # 3x3 conv, 1 input, 32 outputs
-    'wc1': tf.Variable(init_wc1 * tf.random_normal([3, 3, 1, 32])),
-    # 3x3 conv, 32 input, 32 outputs
-    'wc11': tf.Variable(init_wc11*tf.random_normal([3, 3, 32, 32])),
-    # 3x3 conv, 32 inputs, 64 outputs
-    'wc2': tf.Variable(init_wc2 * tf.random_normal([3, 3, 32, 64])),
-    # 3x3 conv, 32 inputs, 64 outputs
-    'wc21': tf.Variable(init_wc21*tf.random_normal([3, 3, 64, 64])),
-    # 3x3 conv, 64 inputs, 64 outputs
-    'wc3': tf.Variable(init_wc3 * tf.random_normal([3, 3, 64, 64])),
-    # fully connected, 64/(2*2*2)=8, 304/(2*2*2)=38 (three max pool k=2)
-    # inputs, 1024 outputs
-    'wd1': tf.Variable(init_wd1 * tf.random_normal([8 * 38 * 64, 1024])),
-    #'out': tf.Variable(alpha*tf.random_normal([1024, n_classes]))
-    # 1024 inputs, 20*63 outputs for one catpcha word (max 20chars)
-    'out': tf.Variable(init_out * tf.random_normal([1024, 20 * 63]))
-}
 
-bias_scale = 0.01
-biases = {
-    'bc1':  tf.Variable(bias_scale * tf.random_normal([32])),
-    'bc11': tf.Variable(bias_scale * tf.random_normal([32])),
-    'bc2':  tf.Variable(bias_scale * tf.random_normal([64])),
-    'bc21': tf.Variable(bias_scale * tf.random_normal([64])),
-    'bc3':  tf.Variable(bias_scale * tf.random_normal([64])),
-    'bd1':  tf.Variable(bias_scale * tf.random_normal([1024])),
-    'out':  tf.Variable(bias_scale * tf.random_normal([20 * 63]))
-}
+def main(learning_r=0.001, drop=0.7,train_iters=20000,):
+    
+    img_folder = '/home/ksopyla/dev/data/data_07_2016/'
+    img_folder = '/home/ksirg/dev/data/data_07_2016/'
+    #img_folder = './shared/Captcha/data_07_2016/img/'
+    ds_name = 'data_07_2016'
 
-# Construct model
-pred = conv_net(x, weights, biases, keep_prob)
+    X,Y,test_X, test_Y = prepare_data(img_folder)
 
-# Define loss and optimizer
+    # Parameters
+    learning_rate = learning_r
+    dropout = drop  # Dropout, probability to keep units
+    training_iters = train_iters  # 15000 is ok
+    batch_size = 64
+
+    display_step = 100
+
+    # Network Parameters
+    img_h = 64
+    img_w = 304
+    n_input = img_h * img_w  # captcha images has 64x304 size
+    n_classes = 20 * 63  # each word is encoded by 1260 vector
 
 
-############
-# splited softmax_cross_entropy loss
-# split prediction for each char it takes 63 continous postions, we have 20 chars
-# split_pred = tf.split(1,20,pred)
-# split_y = tf.split(1,20,y)
+    # tf Graph input
+    x = tf.placeholder(tf.float32, [None, n_input])
+    y = tf.placeholder(tf.float32, [None, n_classes])
+    keep_prob = tf.placeholder(tf.float32)  # dropout (keep probability)
 
 
-# #compute partial softmax cost, for each char
-# costs = list()
-# for i in range(20):
-#     costs.append(tf.nn.softmax_cross_entropy_with_logits(split_pred[i],split_y[i]))
 
-# #reduce cost for each char
-# rcosts = list()
-# for i in range(20):
-#     rcosts.append(tf.reduce_mean(costs[i]))
+    # # Store layers weight & bias
 
-# # global reduce
-# loss = tf.reduce_sum(rcosts)
+    # # relu initialization
+    # init_wc1 = np.sqrt(2.0 / (img_w * img_h)) # ~0.01
+    # init_wc11 = np.sqrt(2.0 / (3 * 3 * 32)) # ~0.08
+    # init_wc2 = np.sqrt(2.0 / (3 * 3 * 32)) # ~0.08
+    # init_wc21 = np.sqrt(2.0 / (3 * 3 * 64)) # ~0.06
+    # init_wc3 = np.sqrt(2.0 / (3 * 3 * 64))
+    # init_wd1 = np.sqrt(2.0 / (8 * 38 * 64)) #~0.01
+    # init_out = np.sqrt(2.0 / 1024) #~0.044
 
-
-cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(pred, y)
-loss = tf.reduce_mean(cross_entropy)
-
-optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
-opt_alg = 'adam'
-
-# Evaluate model
-
-# pred are in format batch_size,20*63, reshape it in order to have each character prediction
-# in row, then take argmax of each row (across columns) then check if it is equal
-# original label max indexes
-# then sum all good results and compute mean (accuracy)
-
-#batch, rows, cols
-p = tf.reshape(pred, [-1, 20, 63])
-# max idx acros the rows
-# max_idx_p=tf.argmax(p,2).eval()
-max_idx_p = tf.argmax(p, 2)
-
-l = tf.reshape(y, [-1, 20, 63])
-# max idx acros the rows
-# max_idx_l=tf.argmax(l,2).eval()
-max_idx_l = tf.argmax(l, 2)
-
-correct_pred = tf.equal(max_idx_p, max_idx_l)
-accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+    # #alpha = 'sqrt_HE'
+    # alpha = 0.005
+    # init_wc1 = alpha
+    # init_wc11 = alpha
+    # init_wc2 = alpha
+    # init_wc21 = alpha
+    # init_wc3 = alpha
+    # init_wd1 = alpha
+    # init_out = alpha
 
 
-#cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
-#optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
+    # weights = {
+    #     # 3x3 conv, 1 input, 32 outputs
+    #     'wc1': tf.Variable(init_wc1 * tf.random_normal([3, 3, 1, 32])),
+    #     # 3x3 conv, 32 input, 32 outputs
+    #     'wc11': tf.Variable(init_wc11*tf.random_normal([3, 3, 32, 32])),
+    #     # 3x3 conv, 32 inputs, 64 outputs
+    #     'wc2': tf.Variable(init_wc2 * tf.random_normal([3, 3, 32, 64])),
+    #     # 3x3 conv, 32 inputs, 64 outputs
+    #     'wc21': tf.Variable(init_wc21*tf.random_normal([3, 3, 64, 64])),
+    #     # 3x3 conv, 64 inputs, 64 outputs
+    #     'wc3': tf.Variable(init_wc3 * tf.random_normal([3, 3, 64, 64])),
+    #     # fully connected, 64/(2*2*2)=8, 304/(2*2*2)=38 (three max pool k=2)
+    #     # inputs, 1024 outputs
+    #     'wd1': tf.Variable(init_wd1 * tf.random_normal([8 * 38 * 64, 1024])),
+    #     #'out': tf.Variable(alpha*tf.random_normal([1024, n_classes]))
+    #     # 1024 inputs, 20*63 outputs for one catpcha word (max 20chars)
+    #     'out': tf.Variable(init_out * tf.random_normal([1024, 20 * 63]))
+    # }
 
-# Evaluate model
-#correct_pred = tf.equal(tf.argmax(pred,1), tf.argmax(y,1))
-#accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+    # bias_scale = 0.01
+    # biases = {
+    #     'bc1':  tf.Variable(bias_scale * tf.random_normal([32])),
+    #     'bc11': tf.Variable(bias_scale * tf.random_normal([32])),
+    #     'bc2':  tf.Variable(bias_scale * tf.random_normal([64])),
+    #     'bc21': tf.Variable(bias_scale * tf.random_normal([64])),
+    #     'bc3':  tf.Variable(bias_scale * tf.random_normal([64])),
+    #     'bd1':  tf.Variable(bias_scale * tf.random_normal([1024])),
+    #     'out':  tf.Variable(bias_scale * tf.random_normal([20 * 63]))
+    # }
 
-# Initializing the variables
-init = tf.global_variables_initializer()
+    weights, biases = create_weights(img_w, img_h)
+    # Construct model
+    pred = build_conv_net(x, weights, biases, keep_prob,img_h,img_w)
 
-losses = list()
-train_acc = list()
-test_acc = list()
 
-saver = tf.train.Saver()
+    cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(pred, y)
+    loss = tf.reduce_mean(cross_entropy)
 
-# Launch the graph
-with tf.Session() as sess:
-    sess.run(init)
-    step = 0
-    epoch = 0
-    start_epoch = dt.datetime.now()
+    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
+    opt_alg = 'adam'
 
-    # Keep training until reach max iterations
-    while step <= training_iters:
-        batch_xs, batch_ys, idx = vecmp.random_batch(X, Y, batch_size)
+    # Evaluate model
 
-        # Fit training using batch data
+    # pred are in format batch_size,20*63, reshape it in order to have each character prediction
+    # in row, then take argmax of each row (across columns) then check if it is equal
+    # original label max indexes
+    # then sum all good results and compute mean (accuracy)
 
-        start_op = dt.datetime.now()
+    #batch, rows, cols
+    p = tf.reshape(pred, [-1, 20, 63])
+    # max idx acros the rows
+    # max_idx_p=tf.argmax(p,2).eval()
+    max_idx_p = tf.argmax(p, 2)
 
-        sess.run(optimizer, feed_dict={
-                 x: batch_xs, y: batch_ys, keep_prob: dropout})
-        end_op = dt.datetime.now()
-        #print("#{} opt step {} {} takes {}".format(step,start_op,end_op, end_op-start_op))
+    l = tf.reshape(y, [-1, 20, 63])
+    # max idx acros the rows
+    # max_idx_l=tf.argmax(l,2).eval()
+    max_idx_l = tf.argmax(l, 2)
 
-        if step % display_step == 0:
+    correct_pred = tf.equal(max_idx_p, max_idx_l)
+    accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
-            #print("acc start {}".format(dt.datetime.now()))
-            # Calculate accuracy on random training samples
-            batch_trainX, batch_trainY, idx = vecmp.random_batch(X, Y,100)
-            
-            trn_acc = sess.run(accuracy, feed_dict={
-                           x: batch_trainX, y: batch_trainY, keep_prob: 1.})
-            train_acc.append(trn_acc)
 
-            #print("loss start {}".format(dt.datetime.now()))
-            # Calculate batch loss
-            batch_loss = sess.run(
-                loss, feed_dict={x: batch_trainX, y: batch_trainY, keep_prob: 1.})
-            losses.append(batch_loss)
-            
-            # Calculate accuracy on random test batch 
-            batch_testX, batch_testY, idx = vecmp.random_batch(test_X, test_Y, 100)
-            
-            tst_acc = sess.run(accuracy, feed_dict={
-                           x: batch_testX, y: batch_testY, keep_prob: 1.})
-            test_acc.append(tst_acc)
+    # Initializing the variables
+    init = tf.global_variables_initializer()
 
-            print("##Iter {}, Minibatch Loss={}, Train Acc={} Test Acc={}".format(step, batch_loss,trn_acc,tst_acc))
+    losses = list()
+    train_acc = list()
+    test_acc = list()
 
-            batch_idx = 0
-            k = idx[batch_idx]
+    saver = tf.train.Saver()
 
-            pp = sess.run(pred, feed_dict={
-                          x: batch_trainX, y: batch_trainY, keep_prob: 1.})
+    # Launch the graph
+    with tf.Session() as sess:
+        sess.run(init)
+        step = 0
+        epoch = 0
+        start_epoch = dt.datetime.now()
+
+        # Keep training until reach max iterations
+        while step <= training_iters:
+            batch_xs, batch_ys, idx = vecmp.random_batch(X, Y, batch_size)
+
+            # Fit training using batch data
+
+            start_op = dt.datetime.now()
+
+            sess.run(optimizer, feed_dict={
+                    x: batch_xs, y: batch_ys, keep_prob: dropout})
+            end_op = dt.datetime.now()
+            #print("#{} opt step {} {} takes {}".format(step,start_op,end_op, end_op-start_op))
+
+            if step % display_step == 0:
+
+                #print("acc start {}".format(dt.datetime.now()))
+                # Calculate accuracy on random training samples
+                batch_trainX, batch_trainY, idx = vecmp.random_batch(X, Y,100)
+                
+                trn_acc = sess.run(accuracy, feed_dict={
+                            x: batch_trainX, y: batch_trainY, keep_prob: 1.})
+                train_acc.append(trn_acc)
+
+                #print("loss start {}".format(dt.datetime.now()))
+                # Calculate batch loss
+                batch_loss = sess.run(
+                    loss, feed_dict={x: batch_trainX, y: batch_trainY, keep_prob: 1.})
+                losses.append(batch_loss)
+                
+                # Calculate accuracy on random test batch 
+                batch_testX, batch_testY, idx = vecmp.random_batch(test_X, test_Y, 100)
+                
+                tst_acc = sess.run(accuracy, feed_dict={
+                            x: batch_testX, y: batch_testY, keep_prob: 1.})
+                test_acc.append(tst_acc)
+
+                print("##Iter {}, Minibatch Loss={}, Train Acc={} Test Acc={}".format(step, batch_loss,trn_acc,tst_acc))
+
+                batch_idx = 0
+                k = idx[batch_idx]
+
+                pp = sess.run(pred, feed_dict={
+                            x: batch_trainX, y: batch_trainY, keep_prob: 1.})
+                p = tf.reshape(pp, [-1, 20, 63])
+                max_idx_p = tf.argmax(p, 2).eval()
+
+                predicted_word = vecmp.map_vec_pos2words(max_idx_p[batch_idx, :])
+
+                l = tf.reshape(batch_trainY, [-1, 20, 63])
+                # max idx acros the rows
+                max_idx_l = tf.argmax(l, 2).eval()
+                true_word = vecmp.map_vec_pos2words(max_idx_l[batch_idx, :])
+
+                print("true : {}, predicted {}".format(true_word, predicted_word))
+
+                epoch += 1
+
+            step += 1
+
+            if step % 5000 == 0:
+                print('saving...')
+                save_file = './models/model_{}_init_{}.ckpt'.format(ds_name,alpha)
+                save_path = saver.save(sess, save_file)
+
+        end_epoch = dt.datetime.now()
+        print("Optimization Finished, end={} duration={}".format(
+            end_epoch, end_epoch - start_epoch))
+
+        # Calculate accuracy
+        print("\n\nStart testing...")
+        parts = 10
+        test_batch_sz= test_size//parts
+        i=0
+        k=0
+        acc=0.0
+        for part in range(parts):
+            i = k
+            k = i+test_batch_sz
+            batch_test_X= test_X[i:k]
+            batch_test_Y = test_Y[i:k]
+            batch_acc= sess.run(accuracy, feed_dict={x: batch_test_X, y: batch_test_Y, keep_prob: 1.})
+            acc+=batch_acc
+
+            print("Batch #{} accuracy= {}, predictions:".format(part,batch_acc))
+            pp = sess.run(pred, feed_dict={x: batch_test_X, y: batch_test_Y, keep_prob: 1.})
             p = tf.reshape(pp, [-1, 20, 63])
             max_idx_p = tf.argmax(p, 2).eval()
-
-            predicted_word = vecmp.map_vec_pos2words(max_idx_p[batch_idx, :])
-
-            l = tf.reshape(batch_trainY, [-1, 20, 63])
+            l = tf.reshape(test_Y, [-1, 20, 63])
             # max idx acros the rows
             max_idx_l = tf.argmax(l, 2).eval()
-            true_word = vecmp.map_vec_pos2words(max_idx_l[batch_idx, :])
 
-            print("true : {}, predicted {}".format(true_word, predicted_word))
+            for k in range(test_batch_sz):
 
-            epoch += 1
+                true_word = vecmp.map_vec_pos2words(max_idx_l[k, :])
+                predicted_word = vecmp.map_vec_pos2words(max_idx_p[k, :])
 
-        step += 1
-
-        if step % 5000 == 0:
-            print('saving...')
-            save_file = './models/model_{}_init_{}.ckpt'.format(ds_name,alpha)
-            save_path = saver.save(sess, save_file)
-
-    end_epoch = dt.datetime.now()
-    print("Optimization Finished, end={} duration={}".format(
-        end_epoch, end_epoch - start_epoch))
-
-    # Calculate accuracy
-    print("\n\nStart testing...")
-    parts = 10
-    test_batch_sz= test_size//parts
-    i=0
-    k=0
-    acc=0.0
-    for part in range(parts):
-        i = k
-        k = i+test_batch_sz
-        batch_test_X= test_X[i:k]
-        batch_test_Y = test_Y[i:k]
-        batch_acc= sess.run(accuracy, feed_dict={x: batch_test_X, y: batch_test_Y, keep_prob: 1.})
-        acc+=batch_acc
-
-        print("Batch #{} accuracy= {}, predictions:".format(part,batch_acc))
-        pp = sess.run(pred, feed_dict={x: batch_test_X, y: batch_test_Y, keep_prob: 1.})
-        p = tf.reshape(pp, [-1, 20, 63])
-        max_idx_p = tf.argmax(p, 2).eval()
-        l = tf.reshape(test_Y, [-1, 20, 63])
-        # max idx acros the rows
-        max_idx_l = tf.argmax(l, 2).eval()
-
-        for k in range(test_batch_sz):
-
-            true_word = vecmp.map_vec_pos2words(max_idx_l[k, :])
-            predicted_word = vecmp.map_vec_pos2words(max_idx_p[k, :])
-
-            got_error = ''
-            if(true_word != predicted_word):
-                got_error = '<--- error'
-            print("true : {}, predicted {} {}".format(
-                true_word, predicted_word, got_error))
-    
-    acc= acc/parts
-    print("Testing Accuracy:{}".format(acc))
+                got_error = ''
+                if(true_word != predicted_word):
+                    got_error = '<--- error'
+                print("true : {}, predicted {} {}".format(
+                    true_word, predicted_word, got_error))
+        
+        acc= acc/parts
+        print("Testing Accuracy:{}".format(acc))
 
 
-# iters_steps
-iter_steps = [display_step *
-              k for k in range((training_iters // display_step) + 1)]
-
-trainning_version = './plots/captcha_{}_opt_{}_lr_{}_2x2conv_dropout_{}_6l_init_{}_iter_{}.png'.format(ds_name,opt_alg,learning_rate,dropout,alpha,training_iters)
+        plot_title = './plots/captcha_{}_opt_{}_lr_{}_2x2conv_dropout_{}_6l_init_{}_iter_{}.png'.format(ds_name,opt_alg,learning_rate,dropout,alpha,training_iters)
+        save_plots(losses, train_acc, test_acc, training_iters,plot_title)
 
 
-imh = plt.figure(1, figsize=(15, 12), dpi=160)
-# imh.tight_layout()
-# imh.subplots_adjust(top=0.88)
-
-imh.suptitle(trainning_version)
-plt.subplot(311)
-#plt.plot(iter_steps,losses, '-g', label='Loss')
-plt.semilogy(iter_steps, losses, '-g', label='Loss')
-plt.title('Loss function')
-plt.subplot(312)
-plt.plot(iter_steps, train_acc, '-r', label='Trn Acc')
-plt.title('Train Accuracy')
-
-plt.subplot(313)
-plt.plot(iter_steps, test_acc, '-r', label='Tst Acc')
-plt.title('Test Accuracy')
 
 
-plt.tight_layout()
-plt.subplots_adjust(top=0.88)
 
-plt.savefig(trainning_version)
+if __name__ == "__main__":
+    # set command line options
+    parser = optparse.OptionParser('usage: %prog [options]')
+    parser.add_option('-d', '--dropout',
+                      dest='dropout',
+                      default=0.7,
+                      help='dropout')
+    parser.add_option('-l', '--learning_rate',
+                      dest='learning_rate',
+                      default=0.001,
+                      help='optimizer learning rate')
+    parser.add_option('-i', '--training_iters',
+                      dest='training_iters',
+                      default=20000,
+                      help='number of training iteration')
+
+    parser.add_option('-a', '--activation_func',
+                      dest='activation_func',
+                      default='relu',
+                      help='relu, elu')
+                      
+
+
+
+    (options, args) = parser.parse_args()
+    learning_rate = options.learning_rate
+    dropout = options.dropout
+    training_iters = options.training_iters
+    main(learning_r=learning_rate,drop=dropout,train_iters=training_iters)
