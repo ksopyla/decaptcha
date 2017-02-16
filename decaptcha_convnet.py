@@ -84,7 +84,7 @@ def max_pool(img, k):
     return tf.nn.max_pool(img, ksize=[1, k, k, 1], strides=[1, k, k, 1], padding='SAME')
 
 
-def create_weights(img_w, img_h):
+def create_weights(img_w, img_h,alpha=0.005):
     '''
     Create weights and do an initialization
 
@@ -103,7 +103,7 @@ def create_weights(img_w, img_h):
     init_out = np.sqrt(2.0 / 1024) #~0.044
 
     #alpha = 'sqrt_HE'
-    alpha = 0.005
+    #alpha = 0.005
     init_wc1 = alpha
     init_wc11 = alpha
     init_wc2 = alpha
@@ -285,7 +285,8 @@ def main(learning_r=0.001, drop=0.7,train_iters=20000,):
     #     'out':  tf.Variable(bias_scale * tf.random_normal([20 * 63]))
     # }
 
-    weights, biases = create_weights(img_w, img_h)
+    alpha=0.005
+    weights, biases = create_weights(img_w, img_h, alpha)
     # Construct model
     pred = build_conv_net(x, weights, biases, keep_prob,img_h,img_w)
 
@@ -395,8 +396,8 @@ def main(learning_r=0.001, drop=0.7,train_iters=20000,):
 
             if step % 5000 == 0:
                 print('saving...')
-                save_file = './models/model_{}_init_{}.ckpt'.format(ds_name,alpha)
-                save_path = saver.save(sess, save_file)
+                #save_file = './models/model_{}_init_{}.ckpt'.format(ds_name,alpha)
+                #save_path = saver.save(sess, save_file)
 
         end_epoch = dt.datetime.now()
         print("Optimization Finished, end={} duration={}".format(
