@@ -143,9 +143,9 @@ def create_weights(img_w, img_h,alpha=0.005):
         'out':  tf.Variable(bias_scale * tf.random_normal([20 * 63]))
     }
 
-    return weights,biases
+    return weights, biases
 
-def build_conv_net(_X, _weights, _biases, _dropout, img_h, img_w):
+def build_conv_net_model_2x2con_1con_1FC(_X, _weights, _biases, _dropout, img_h, img_w):
     """
     Creates tensorflow net model, adds layers
 
@@ -197,6 +197,58 @@ def build_conv_net(_X, _weights, _biases, _dropout, img_h, img_w):
     return out
 
 
+def build_conv_net2(_X, _weights, _biases, _dropout, img_h, img_w):
+    """
+    Creates tensorflow net model, adds layers
+
+    X - tensor data
+    _weights - initailized weights
+
+    img_h - input image height
+    img_w - input image width
+    """
+    # Reshape input picture
+    _X = tf.reshape(_X, shape=[-1, img_h, img_w, 1])
+
+    # Convolution Layer 3x3x32 first, layer with relu
+    conv1 = conv2d(_X, _weights['wc1'], _biases['bc1'])
+    # Convolution Layer 3x3x32, second layer with relu
+    conv1 = conv2d(conv1, _weights['wc11'], _biases['bc11'])
+    # Max Pooling (down-sampling), change input size by factor of 2
+    conv1 = max_pool(conv1, k=2)
+    # Apply Dropout
+    conv1 = tf.nn.dropout(conv1, _dropout)
+
+    # Convolution Layer, 3x3x64
+    conv2 = conv2d(conv1, _weights['wc2'], _biases['bc2'])
+    # Convolution Layer, 3x3x64
+    conv2 = conv2d(conv2, _weights['wc21'], _biases['bc21'])
+    # Max Pooling (down-sampling)
+    conv2 = max_pool(conv2, k=2)
+    # Apply Dropout
+    conv2 = tf.nn.dropout(conv2, _dropout)
+
+    # Convolution Layer, 3x3x64
+    conv3 = conv2d(conv2, _weights['wc3'], _biases['bc3'])
+    # Max Pooling (down-sampling)
+    conv3 = max_pool(conv3, k=2)
+    # Apply Dropout
+    conv3 = tf.nn.dropout(conv3, _dropout)
+
+    # Fully connected layer
+    # Reshape conv2 output to fit dense layer input
+    dense1 = tf.reshape(conv3, [-1, _weights['wd1'].get_shape().as_list()[0]])
+    # Relu activation
+    dense1 = tf.nn.relu(
+        tf.add(tf.matmul(dense1, _weights['wd1']), _biases['bd1']))
+    dense1 = tf.nn.dropout(dense1, _dropout)  # Apply Dropout
+
+    # Output, class prediction
+    out = tf.add(tf.matmul(dense1, _weights['out']), _biases['out'])
+    #out = tf.nn.softmax(out)
+    return out    
+
+
 
 
 def main(learning_r=0.001, drop=0.7,train_iters=20000,):
@@ -231,62 +283,8 @@ def main(learning_r=0.001, drop=0.7,train_iters=20000,):
     y = tf.placeholder(tf.float32, [None, n_classes])
     keep_prob = tf.placeholder(tf.float32)  # dropout (keep probability)
 
-
-
-    # # Store layers weight & bias
-
-    # # relu initialization
-    # init_wc1 = np.sqrt(2.0 / (img_w * img_h)) # ~0.01
-    # init_wc11 = np.sqrt(2.0 / (3 * 3 * 32)) # ~0.08
-    # init_wc2 = np.sqrt(2.0 / (3 * 3 * 32)) # ~0.08
-    # init_wc21 = np.sqrt(2.0 / (3 * 3 * 64)) # ~0.06
-    # init_wc3 = np.sqrt(2.0 / (3 * 3 * 64))
-    # init_wd1 = np.sqrt(2.0 / (8 * 38 * 64)) #~0.01
-    # init_out = np.sqrt(2.0 / 1024) #~0.044
-
-    # #alpha = 'sqrt_HE'
-    # alpha = 0.005
-    # init_wc1 = alpha
-    # init_wc11 = alpha
-    # init_wc2 = alpha
-    # init_wc21 = alpha
-    # init_wc3 = alpha
-    # init_wd1 = alpha
-    # init_out = alpha
-
-
-    # weights = {
-    #     # 3x3 conv, 1 input, 32 outputs
-    #     'wc1': tf.Variable(init_wc1 * tf.random_normal([3, 3, 1, 32])),
-    #     # 3x3 conv, 32 input, 32 outputs
-    #     'wc11': tf.Variable(init_wc11*tf.random_normal([3, 3, 32, 32])),
-    #     # 3x3 conv, 32 inputs, 64 outputs
-    #     'wc2': tf.Variable(init_wc2 * tf.random_normal([3, 3, 32, 64])),
-    #     # 3x3 conv, 32 inputs, 64 outputs
-    #     'wc21': tf.Variable(init_wc21*tf.random_normal([3, 3, 64, 64])),
-    #     # 3x3 conv, 64 inputs, 64 outputs
-    #     'wc3': tf.Variable(init_wc3 * tf.random_normal([3, 3, 64, 64])),
-    #     # fully connected, 64/(2*2*2)=8, 304/(2*2*2)=38 (three max pool k=2)
-    #     # inputs, 1024 outputs
-    #     'wd1': tf.Variable(init_wd1 * tf.random_normal([8 * 38 * 64, 1024])),
-    #     #'out': tf.Variable(alpha*tf.random_normal([1024, n_classes]))
-    #     # 1024 inputs, 20*63 outputs for one catpcha word (max 20chars)
-    #     'out': tf.Variable(init_out * tf.random_normal([1024, 20 * 63]))
-    # }
-
-    # bias_scale = 0.01
-    # biases = {
-    #     'bc1':  tf.Variable(bias_scale * tf.random_normal([32])),
-    #     'bc11': tf.Variable(bias_scale * tf.random_normal([32])),
-    #     'bc2':  tf.Variable(bias_scale * tf.random_normal([64])),
-    #     'bc21': tf.Variable(bias_scale * tf.random_normal([64])),
-    #     'bc3':  tf.Variable(bias_scale * tf.random_normal([64])),
-    #     'bd1':  tf.Variable(bias_scale * tf.random_normal([1024])),
-    #     'out':  tf.Variable(bias_scale * tf.random_normal([20 * 63]))
-    # }
-
-    alpha=0.005
-    weights, biases = create_weights(img_w, img_h, alpha)
+    #alpha=0.005
+    #weights, biases = create_weights(img_w, img_h, alpha)
     # Construct model
     pred = build_conv_net(x, weights, biases, keep_prob,img_h,img_w)
 
