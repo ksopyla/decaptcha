@@ -84,7 +84,7 @@ def max_pool(img, k):
     return tf.nn.max_pool(img, ksize=[1, k, k, 1], strides=[1, k, k, 1], padding='SAME')
 
 
-def create_weights(img_w, img_h,alpha=0.005):
+def model_2x2con_1con_1FC_weights(img_w, img_h,scale_weights=0.01):
     '''
     Create weights and do an initialization
 
@@ -102,15 +102,15 @@ def create_weights(img_w, img_h,alpha=0.005):
     init_wd1 = np.sqrt(2.0 / (8 * 38 * 64)) #~0.01
     init_out = np.sqrt(2.0 / 1024) #~0.044
 
-    #alpha = 'sqrt_HE'
-    #alpha = 0.005
-    init_wc1 = alpha
-    init_wc11 = alpha
-    init_wc2 = alpha
-    init_wc21 = alpha
-    init_wc3 = alpha
-    init_wd1 = alpha
-    init_out = alpha
+    #scale_weights = 'sqrt_HE'
+    #scale_weights = 0.005
+    init_wc1 = scale_weights
+    init_wc11 = scale_weights
+    init_wc2 = scale_weights
+    init_wc21 = scale_weights
+    init_wc3 = scale_weights
+    init_wd1 = scale_weights
+    init_out = scale_weights
 
 
     weights = {
@@ -127,7 +127,6 @@ def create_weights(img_w, img_h,alpha=0.005):
         # fully connected, 64/(2*2*2)=8, 304/(2*2*2)=38 (three max pool k=2)
         # inputs, 1024 outputs
         'wd1': tf.Variable(init_wd1 * tf.random_normal([8 * 38 * 64, 1024])),
-        #'out': tf.Variable(alpha*tf.random_normal([1024, n_classes]))
         # 1024 inputs, 20*63 outputs for one catpcha word (max 20chars)
         'out': tf.Variable(init_out * tf.random_normal([1024, 20 * 63]))
     }
@@ -145,7 +144,7 @@ def create_weights(img_w, img_h,alpha=0.005):
 
     return weights, biases
 
-def build_conv_net_model_2x2con_1con_1FC(_X, _weights, _biases, _dropout, img_h, img_w):
+def model_2x2con_1con_1FC(_X, _dropout, img_h, img_w, scale_weights=0.01):
     """
     Creates tensorflow net model, adds layers
 
@@ -154,7 +153,10 @@ def build_conv_net_model_2x2con_1con_1FC(_X, _weights, _biases, _dropout, img_h,
 
     img_h - input image height
     img_w - input image width
+    
     """
+    _weights, _biases = model_2x2con_1con_1FC_weights(img_w, img_h,scale_weights)
+    
     # Reshape input picture
     _X = tf.reshape(_X, shape=[-1, img_h, img_w, 1])
 
@@ -196,57 +198,92 @@ def build_conv_net_model_2x2con_1con_1FC(_X, _weights, _biases, _dropout, img_h,
     #out = tf.nn.softmax(out)
     return out
 
-
-def build_conv_net2(_X, _weights, _biases, _dropout, img_h, img_w):
+def model_3x3con_1FC(_X, _dropout, img_h, img_w, scale_weights=0.1):
     """
-    Creates tensorflow net model, adds layers
+    Simpler conv model with 3x2 conv (3x3) layers
 
     X - tensor data
     _weights - initailized weights
 
     img_h - input image height
     img_w - input image width
+    
     """
+    #scale_weights = 'sqrt_HE'
+    init_wc1 = scale_weights
+    init_wc11 = scale_weights
+    init_wc2 = scale_weights
+    init_wc21 = scale_weights
+    init_wc3 = scale_weights
+    init_wd1 = scale_weights
+    init_wfc1 = scale_weights
+    init_out= scale_weights
+
+    bias_scale = 0.1
+    
+    # 3x3 conv, 1 input, 64 outputs
+    wc1 = tf.Variable(init_wc1 * tf.random_normal([3, 3, 1, 64]))
+    bc1 = tf.Variable(bias_scale * tf.random_normal([64]))
+    # 3x3 conv, 64 input, 64 outputs
+    wc11 = tf.Variable(init_wc11*tf.random_normal([3, 3, 64, 64]))
+    bc11 = tf.Variable(bias_scale * tf.random_normal([64]))
+    
+    # 3x3 conv, 64 inputs, 96 outputs
+    wc2 = tf.Variable(init_wc2 * tf.random_normal([3, 3, 64, 96]))
+    bc2 = tf.Variable(bias_scale * tf.random_normal([96]))
+    # 3x3 conv, 96 inputs, 96 outputs
+    wc21 = tf.Variable(init_wc21*tf.random_normal([3, 3, 96, 96]))
+    bc21 = tf.Variable(bias_scale * tf.random_normal([96]))
+    
+    # 3x3 conv, 64 inputs, 64 outputs
+    wc3 = tf.Variable(init_wc3 * tf.random_normal([3, 3, 96, 128]))
+    bc3 = tf.Variable(bias_scale * tf.random_normal([128]))
+    wc31 = tf.Variable(init_wc3 * tf.random_normal([3, 3, 128, 128]))
+    bc31 = tf.Variable(bias_scale * tf.random_normal([128]))
+    
+    # fully connected, 64/(2*2*2)=8, 304/(2*2*2)=38 (three max pool k=2)
+    # inputs, 2048 outputs
+    out_size=512
+    wfc1 = tf.Variable(init_wfc1 * tf.random_normal([8 * 38 * 128, out_size]))
+    bf1 = tf.Variable(bias_scale * tf.random_normal([out_size]))
+
+    # 1024 inputs, 20*63 outputs for one catpcha word (max 20chars)
+    wout =  tf.Variable(init_out * tf.random_normal([out_size, 20 * 63]))
+    bout = tf.Variable(bias_scale * tf.random_normal([20 * 63]))
+
+    
     # Reshape input picture
     _X = tf.reshape(_X, shape=[-1, img_h, img_w, 1])
 
-    # Convolution Layer 3x3x32 first, layer with relu
-    conv1 = conv2d(_X, _weights['wc1'], _biases['bc1'])
-    # Convolution Layer 3x3x32, second layer with relu
-    conv1 = conv2d(conv1, _weights['wc11'], _biases['bc11'])
+    # Convolution Layer 3x3
+    conv1 = conv2d(_X, wc1, bc1)
+    conv1 = conv2d(conv1, wc11, bc11)
     # Max Pooling (down-sampling), change input size by factor of 2
     conv1 = max_pool(conv1, k=2)
-    # Apply Dropout
-    conv1 = tf.nn.dropout(conv1, _dropout)
-
-    # Convolution Layer, 3x3x64
-    conv2 = conv2d(conv1, _weights['wc2'], _biases['bc2'])
-    # Convolution Layer, 3x3x64
-    conv2 = conv2d(conv2, _weights['wc21'], _biases['bc21'])
+    
+    # Convolution Layer
+    conv2 = conv2d(conv1, wc2, bc2)
+    conv2 = conv2d(conv2, wc21, bc21)
     # Max Pooling (down-sampling)
     conv2 = max_pool(conv2, k=2)
-    # Apply Dropout
-    conv2 = tf.nn.dropout(conv2, _dropout)
-
-    # Convolution Layer, 3x3x64
-    conv3 = conv2d(conv2, _weights['wc3'], _biases['bc3'])
+    
+    # Convolution Layer,
+    conv3 = conv2d(conv2, wc3, bc3)
+    conv3 = conv2d(conv3, wc31, bc31)
     # Max Pooling (down-sampling)
     conv3 = max_pool(conv3, k=2)
-    # Apply Dropout
-    conv3 = tf.nn.dropout(conv3, _dropout)
-
+    
     # Fully connected layer
     # Reshape conv2 output to fit dense layer input
-    dense1 = tf.reshape(conv3, [-1, _weights['wd1'].get_shape().as_list()[0]])
+    fc1 = tf.reshape(conv3, [-1, wfc1.get_shape().as_list()[0]])
     # Relu activation
-    dense1 = tf.nn.relu(
-        tf.add(tf.matmul(dense1, _weights['wd1']), _biases['bd1']))
-    dense1 = tf.nn.dropout(dense1, _dropout)  # Apply Dropout
-
+    fc1 = tf.nn.relu(tf.matmul(fc1, wd1)+ bfc1)
+    fc1 = tf.nn.dropout(fc1, _dropout)  # Apply Dropout
+    
     # Output, class prediction
-    out = tf.add(tf.matmul(dense1, _weights['out']), _biases['out'])
+    out = tf.matmul(fc1, wout)+bout
     #out = tf.nn.softmax(out)
-    return out    
+    return out
 
 
 
@@ -255,11 +292,11 @@ def main(learning_r=0.001, drop=0.7,train_iters=20000,):
 
     print('Learning script with params learning_rate={}, dropout={}, iterations={}'.format(learning_r,drop,train_iters))
     
-    img_folder = '/home/ksopyla/dev/data/data_07_2016/'
+    #img_folder = '/home/ksopyla/dev/data/data_07_2016/'
     #img_folder = '/home/ksirg/dev/data/data_07_2016/'
-    #img_folder = './shared/Captcha/data_07_2016/img/'
+    img_folder = './shared/Captcha/data_07_2016/img/'
     ds_name = 'data_07_2016'
-
+    
     X,Y,test_X, test_Y = prepare_data(img_folder)
     test_size = test_X.shape[0]
 
@@ -283,10 +320,16 @@ def main(learning_r=0.001, drop=0.7,train_iters=20000,):
     y = tf.placeholder(tf.float32, [None, n_classes])
     keep_prob = tf.placeholder(tf.float32)  # dropout (keep probability)
 
-    #alpha=0.005
-    #weights, biases = create_weights(img_w, img_h, alpha)
-    # Construct model
-    pred = build_conv_net(x, weights, biases, keep_prob,img_h,img_w)
+    # Construct model 1 - not so good, convergence problems
+    # scale_weights=0.005
+    # pred = model_2x2con_1con_1FC(x, keep_prob,img_h,img_w,scale_weights)
+    # model_version = model_2x2con_1con_1FC.__name__
+    
+
+    # Construct model 2 - much simpler with 3x2 conv layers, dropout only at fc layer
+    scale_weights=0.1
+    pred = model_3x3con_1FC(x, keep_prob,img_h,img_w,scale_weights)
+    model_version = model_3x3con_1FC.__name__
 
 
     cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(pred, y)
@@ -394,7 +437,7 @@ def main(learning_r=0.001, drop=0.7,train_iters=20000,):
 
             if step % 5000 == 0:
                 print('saving...')
-                #save_file = './models/model_{}_init_{}.ckpt'.format(ds_name,alpha)
+                #save_file = './models/model_{}_init_{}.ckpt'.format(ds_name,scale_weights)
                 #save_path = saver.save(sess, save_file)
 
         end_epoch = dt.datetime.now()
@@ -439,7 +482,7 @@ def main(learning_r=0.001, drop=0.7,train_iters=20000,):
         print("Testing Accuracy:{}".format(acc))
 
 
-        plot_title = './plots/captcha_{}_opt_{}_lr_{}_2x2conv_dropout_{}_6l_init_{}_iter_{}.png'.format(ds_name,opt_alg,learning_rate,dropout,alpha,training_iters)
+        plot_title = './plots/captcha_{}_{}_opt_{}_lr_{}_dropout_{}_6l_init_{}_iter_{}.png'.format(ds_name,model_version,opt_alg,learning_rate,dropout,scale_weights,training_iters)
         save_plots(losses, train_acc, test_acc, training_iters,display_step, plot_title)
 
 
@@ -448,6 +491,11 @@ def main(learning_r=0.001, drop=0.7,train_iters=20000,):
 
 if __name__ == "__main__":
     # set command line options
+    
+    print('in main')
+    import sys
+    print(sys.argv)
+    
     parser = optparse.OptionParser('usage: %prog [options]')
     parser.add_option('-d', '--dropout',
                       dest='dropout',
@@ -469,6 +517,9 @@ if __name__ == "__main__":
                       dest='activation_func',
                       default='relu',
                       help='relu, elu')
+   
+    parser.add_option('-f', '--ipython_kernel_log',
+                      dest='iptyhon_kernel', help='ipython kernel log')                        
                       
 
 
