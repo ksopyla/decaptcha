@@ -12,7 +12,7 @@ import optparse
 
 def prepare_data(img_folder):
     
-    X, Y, captcha_text = vecmp.load_dataset(folder=img_folder, max_files=3000)
+    X, Y, captcha_text = vecmp.load_dataset(folder=img_folder)
 
     # invert and normalize to [0,1]
     #X =  (255- Xdata)/255.0
@@ -292,9 +292,9 @@ def main(learning_r=0.001, drop=0.7,train_iters=20000,):
 
     print('Learning script with params learning_rate={}, dropout={}, iterations={}'.format(learning_r,drop,train_iters))
     
-    #img_folder = '/home/ksopyla/dev/data/data_07_2016/'
+    img_folder = '/home/ksopyla/dev/data/data_07_2016/'
     #img_folder = '/home/ksirg/dev/data/data_07_2016/'
-    img_folder = './shared/Captcha/data_07_2016/img/'
+    #img_folder = './shared/Captcha/data_07_2016/img/'
     ds_name = 'data_07_2016'
     
     X,Y,test_X, test_Y = prepare_data(img_folder)
@@ -332,7 +332,7 @@ def main(learning_r=0.001, drop=0.7,train_iters=20000,):
     model_version = model_3x3con_1FC.__name__
 
 
-    cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(pred, y)
+    cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(logits=pred, labels=y)
     loss = tf.reduce_mean(cross_entropy)
 
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
