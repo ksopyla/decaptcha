@@ -12,7 +12,7 @@ import optparse
 
 def prepare_data(img_folder):
     
-    X, Y, captcha_text = vecmp.load_dataset(folder=img_folder)
+    X, Y, captcha_text = vecmp.load_dataset(folder=img_folder, max_files=3000)
 
     # invert and normalize to [0,1]
     #X =  (255- Xdata)/255.0
@@ -245,7 +245,7 @@ def model_3x3con_1FC(_X, _dropout, img_h, img_w, scale_weights=0.1):
     # inputs, 2048 outputs
     out_size=512
     wfc1 = tf.Variable(init_wfc1 * tf.random_normal([8 * 38 * 128, out_size]))
-    bf1 = tf.Variable(bias_scale * tf.random_normal([out_size]))
+    bfc1 = tf.Variable(bias_scale * tf.random_normal([out_size]))
 
     # 1024 inputs, 20*63 outputs for one catpcha word (max 20chars)
     wout =  tf.Variable(init_out * tf.random_normal([out_size, 20 * 63]))
@@ -277,7 +277,7 @@ def model_3x3con_1FC(_X, _dropout, img_h, img_w, scale_weights=0.1):
     # Reshape conv2 output to fit dense layer input
     fc1 = tf.reshape(conv3, [-1, wfc1.get_shape().as_list()[0]])
     # Relu activation
-    fc1 = tf.nn.relu(tf.matmul(fc1, wd1)+ bfc1)
+    fc1 = tf.nn.relu(tf.matmul(fc1, wfc1)+ bfc1)
     fc1 = tf.nn.dropout(fc1, _dropout)  # Apply Dropout
     
     # Output, class prediction

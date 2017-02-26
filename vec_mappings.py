@@ -8,7 +8,7 @@ def load_dataset(folder="./img", max_files=float('inf')):
     file_list = os.listdir(folder)
     
     # number of files
-    N =len([name for name in os.listdir(folder)])
+    N =len(file_list)
     
     N = min(max_files,N)
     
